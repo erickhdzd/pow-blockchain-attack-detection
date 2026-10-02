@@ -9,7 +9,7 @@ import time
 from pathlib import Path
 from typing import Any
 
-import joblib
+import joblib  # type: ignore[import-untyped]
 import numpy as np
 import pandas as pd
 import sklearn
@@ -181,7 +181,8 @@ def _record_run(
     confusion_totals: dict[tuple[str, str], np.ndarray],
 ) -> None:
     summaries.append(summary)
-    for row in metrics.per_class.to_dict(orient="records"):
+    for raw_row in metrics.per_class.to_dict(orient="records"):
+        row = {str(key): value for key, value in raw_row.items()}
         per_class_rows.append(
             {
                 "task": summary["task"],

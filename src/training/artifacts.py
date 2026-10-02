@@ -69,7 +69,12 @@ def aggregate_runs(summary_path: Path, output_path: Path) -> pd.DataFrame:
         column: ["mean", "std"] for column in metric_columns
     }
     aggregated = frame.groupby(["task", "model"], as_index=True).agg(aggregations)
-    aggregated.columns = [f"{name}_{stat}" for name, stat in aggregated.columns]
+    aggregated.columns = [
+        "_".join(map(str, column))
+        if isinstance(column, tuple)
+        else str(column)
+        for column in aggregated.columns
+    ]
     aggregated = aggregated.reset_index()
     aggregated.to_csv(output_path, index=False)
     return aggregated
