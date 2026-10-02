@@ -114,6 +114,7 @@ def _run_neural(
     directories: dict[str, Path],
     profile: str,
     ood_views: dict[str, AlignedSplitViews] | None = None,
+    save_predictions: bool = False,
 ) -> tuple[dict[str, Any], MetricResult, list[OODRunOutput]]:
     seed_everything(seed)
     is_mlp = model_name == "mlp"
@@ -160,6 +161,26 @@ def _run_neural(
         num_workers=config.num_workers,
     )
     predictions = probabilities.argmax(axis=1)
+
+    if save_predictions:
+        prediction_directory = Path(config.results_root) / "predictions"
+        prediction_directory.mkdir(parents=True, exist_ok=True)
+
+        prediction_frame = test_metadata[
+            ["simulation_id", "step"]
+        ].reset_index(drop=True).copy()
+        prediction_frame["y_true"] = test_y
+        prediction_frame["y_pred"] = predictions
+
+        for class_id in range(probabilities.shape[1]):
+            prediction_frame[f"prob_{class_id}"] = probabilities[:, class_id]
+
+        prediction_frame.to_csv(
+            prediction_directory
+            / f"{task}__{model_name}__seed_{seed}.csv",
+            index=False,
+        )
+
     metrics = evaluate_multiclass(test_y, predictions, probabilities)
     delay = detection_delay_blocks(test_metadata, predictions)
     if config.save_models:
@@ -302,6 +323,7 @@ def run_experiments(
     config_path: str | Path,
     profile: str,
     ood_roots: dict[str, Path] | None = None,
+    save_predictions: bool = False,
 ) -> Path:
     """Run the configured experiment matrix and optional external OOD evaluation."""
 
@@ -384,6 +406,7 @@ def run_experiments(
                     directories,
                     profile,
                     task_ood_views,
+                    save_predictions,
                 )
                 _record_run(
                     summary,
@@ -464,6 +487,11 @@ def main() -> None:
         default="smoke",
     )
     parser.add_argument(
+        "--save-predictions",
+        action="store_true",
+        help="Save ID test predictions for statistical analysis.",
+    )
+    parser.add_argument(
         "--ood",
         action="append",
         default=[],
@@ -493,6 +521,7 @@ def main() -> None:
         args.config,
         args.profile,
         ood_roots or None,
+        args.save_predictions,
     )
 
 
