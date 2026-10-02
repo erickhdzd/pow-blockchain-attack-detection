@@ -26,13 +26,21 @@ from src.training.artifacts import (
 )
 from src.training.classical import build_classical_model, predict_probabilities
 from src.training.config import TrainingConfig, load_training_config
-from src.training.data import AlignedDatasetViews, load_dataset_bundle, make_aligned_dataset_views
+from src.training.data import (
+    AlignedDatasetViews,
+    AlignedSplitViews,
+    load_dataset_bundle,
+    load_external_dataset,
+    make_aligned_dataset_views,
+    make_aligned_split_views,
+)
 from src.training.metrics import MetricResult, detection_delay_blocks, evaluate_multiclass
 from src.training.models import build_neural_model, parameter_count
 from src.training.neural import fit_neural, predict_neural, resolve_device
 from src.training.reproducibility import seed_everything
 
 RunOutput = tuple[dict[str, Any], MetricResult]
+OODRunOutput = tuple[dict[str, Any], MetricResult]
 
 
 def _sample_id_sha256(metadata: pd.DataFrame) -> str:
@@ -105,7 +113,8 @@ def _run_neural(
     seed: int,
     directories: dict[str, Path],
     profile: str,
-) -> RunOutput:
+    ood_views: dict[str, AlignedSplitViews] | None = None,
+) -> tuple[dict[str, Any], MetricResult, list[OODRunOutput]]:
     seed_everything(seed)
     is_mlp = model_name == "mlp"
     if is_mlp:
@@ -170,7 +179,99 @@ def _run_neural(
         **_sample_counts(views),
         "evaluation_sample_id_sha256": _sample_id_sha256(test_metadata),
     }
+    ood_outputs = [
+        _evaluate_neural_ood(
+            config,
+            model,
+            external_views,
+            task,
+            model_name,
+            seed,
+            domain,
+        )
+        for domain, external_views in (ood_views or {}).items()
+    ]
+
+    return summary, metrics, ood_outputs
+
+
+def _evaluate_neural_ood(
+    config: TrainingConfig,
+    model: torch.nn.Module,
+    views: AlignedSplitViews,
+    task: str,
+    model_name: str,
+    seed: int,
+    domain: str,
+) -> OODRunOutput:
+    """Evaluate an already-fitted neural model on one external domain."""
+
+    if model_name == "mlp":
+        evaluation_x = views.endpoints.x
+        evaluation_y = views.endpoints.y
+        metadata = views.endpoints.metadata
+    else:
+        evaluation_x = views.sequences.x
+        evaluation_y = views.sequences.y
+        metadata = views.sequences.metadata
+
+    device = resolve_device(config.device)
+
+    probabilities, inference_ms = predict_neural(
+        model,
+        evaluation_x,
+        device=device,
+        batch_size=config.batch_size,
+        num_workers=config.num_workers,
+    )
+    predictions = probabilities.argmax(axis=1)
+
+    metrics = evaluate_multiclass(
+        evaluation_y,
+        predictions,
+        probabilities,
+    )
+    delay = detection_delay_blocks(metadata, predictions)
+
+    summary = {
+        "domain": domain,
+        "task": task,
+        "model": model_name,
+        "seed": seed,
+        **metrics.aggregate,
+        **delay,
+        "evaluation_samples": len(evaluation_y),
+        "inference_ms_per_sample": inference_ms,
+        "evaluation_sample_id_sha256": _sample_id_sha256(metadata),
+    }
+
     return summary, metrics
+
+
+
+def _load_ood_views(
+    config: TrainingConfig,
+    dataset_root: str | Path,
+    x_prefix: str,
+    scaler: Any,
+    expected_features: tuple[str, ...],
+    drop_features: tuple[str, ...],
+) -> AlignedSplitViews:
+    """Load an external domain without fitting any preprocessing state."""
+
+    external = load_external_dataset(
+        dataset_root,
+        x_prefix,
+        scaler,
+        expected_features,
+        drop_features,
+    )
+
+    return make_aligned_split_views(
+        external,
+        config.sequence_length,
+        config.sequence_stride,
+    )
 
 
 def _record_run(
@@ -197,8 +298,12 @@ def _record_run(
     confusion_totals[key] += metrics.confusion
 
 
-def run_experiments(config_path: str | Path, profile: str) -> Path:
-    """Run the configured experiment matrix and return the aggregate table path."""
+def run_experiments(
+    config_path: str | Path,
+    profile: str,
+    ood_roots: dict[str, Path] | None = None,
+) -> Path:
+    """Run the configured experiment matrix and optional external OOD evaluation."""
 
     config = load_training_config(config_path)
     directories = ensure_result_directories(config.results_root)
@@ -208,6 +313,8 @@ def run_experiments(config_path: str | Path, profile: str) -> Path:
     per_class_rows: list[dict[str, Any]] = []
     confusion_totals: dict[tuple[str, str], np.ndarray] = {}
     endpoint_audit: dict[str, dict[str, Any]] = {}
+    ood_summaries: list[dict[str, Any]] = []
+    ood_per_class_rows: list[dict[str, Any]] = []
     for task, task_settings in tasks.items():
         drop_features = tuple(
             str(feature)
@@ -223,6 +330,18 @@ def run_experiments(config_path: str | Path, profile: str) -> Path:
             config.sequence_length,
             config.sequence_stride,
         )
+        task_ood_views = {
+            domain: _load_ood_views(
+                config,
+                root,
+                str(task_settings["x_prefix"]),
+                bundle.scaler,
+                views.train.endpoints.feature_names,
+                drop_features,
+            )
+            for domain, root in (ood_roots or {}).items()
+        }
+
         endpoint_audit[task] = {
             **_sample_counts(views),
             "feature_count": len(views.train.endpoints.feature_names),
@@ -255,7 +374,7 @@ def run_experiments(config_path: str | Path, profile: str) -> Path:
             if profile == "smoke" and name not in {"mlp", "transformer"}:
                 continue
             for seed in seeds:
-                summary, metrics = _run_neural(
+                summary, metrics, ood_outputs = _run_neural(
                     config,
                     views,
                     task,
@@ -264,8 +383,33 @@ def run_experiments(config_path: str | Path, profile: str) -> Path:
                     seed,
                     directories,
                     profile,
+                    task_ood_views,
                 )
-                _record_run(summary, metrics, summaries, per_class_rows, confusion_totals)
+                _record_run(
+                    summary,
+                    metrics,
+                    summaries,
+                    per_class_rows,
+                    confusion_totals,
+                )
+                for ood_summary, ood_metrics in ood_outputs:
+                    ood_summaries.append(ood_summary)
+                    for raw_row in ood_metrics.per_class.to_dict(
+                        orient="records"
+                    ):
+                        row = {
+                            str(key): value
+                            for key, value in raw_row.items()
+                        }
+                        ood_per_class_rows.append(
+                            {
+                                "domain": ood_summary["domain"],
+                                "task": ood_summary["task"],
+                                "model": ood_summary["model"],
+                                "seed": ood_summary["seed"],
+                                **row,
+                            }
+                        )
     summary_path = directories["metrics"] / "run_metrics.csv"
     write_summary_table(summaries, summary_path)
     pd.DataFrame(per_class_rows).to_csv(
@@ -278,6 +422,16 @@ def run_experiments(config_path: str | Path, profile: str) -> Path:
             directories["figures"] / f"{task}__{model}__confusion.png",
             f"{task}: {model}",
         )
+    if ood_summaries:
+        write_summary_table(
+            ood_summaries,
+            directories["metrics"] / "ood_run_metrics.csv",
+        )
+        pd.DataFrame(ood_per_class_rows).to_csv(
+            directories["metrics"] / "ood_per_class_metrics.csv",
+            index=False,
+        )
+
     aggregate_path = directories["tables"] / "model_comparison.csv"
     aggregate_runs(summary_path, aggregate_path)
     dataset_manifest = config.dataset_root / "manifests" / "dataset_manifest.json"
@@ -304,9 +458,42 @@ def run_experiments(config_path: str | Path, profile: str) -> Path:
 def main() -> None:
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument("--config", default="configs/training.yaml")
-    parser.add_argument("--profile", choices=("smoke", "full"), default="smoke")
+    parser.add_argument(
+        "--profile",
+        choices=("smoke", "full"),
+        default="smoke",
+    )
+    parser.add_argument(
+        "--ood",
+        action="append",
+        default=[],
+        metavar="DOMAIN=PATH",
+        help="Evaluate fitted neural models on an external OOD dataset.",
+    )
     args = parser.parse_args()
-    run_experiments(args.config, args.profile)
+
+    ood_roots: dict[str, Path] = {}
+    for item in args.ood:
+        domain, separator, raw_path = item.partition("=")
+        domain = domain.strip()
+        raw_path = raw_path.strip()
+
+        if not separator or not domain or not raw_path:
+            parser.error("--ood must use DOMAIN=PATH syntax.")
+        if domain in ood_roots:
+            parser.error(f"Duplicate OOD domain: {domain}")
+
+        root = Path(raw_path)
+        if not root.is_dir():
+            parser.error(f"OOD dataset directory does not exist: {root}")
+
+        ood_roots[domain] = root
+
+    run_experiments(
+        args.config,
+        args.profile,
+        ood_roots or None,
+    )
 
 
 if __name__ == "__main__":
