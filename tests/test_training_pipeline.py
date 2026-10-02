@@ -15,6 +15,7 @@ from src.training.config import TrainingConfig, load_training_config
 from src.training.data import (
     SplitData,
     load_dataset_bundle,
+    load_external_dataset,
     load_external_split,
     make_aligned_dataset_views,
     make_aligned_split_views,
@@ -519,3 +520,107 @@ def test_33_external_split_uses_id_scaler_without_refitting(
             "attack_label"
         ].to_numpy(dtype=np.int64),
     )
+
+
+def test_34_external_dataset_preserves_simulation_boundaries(
+    tiny_dataset: Path,
+) -> None:
+    """Repeated rows are valid, but simulations may not cross splits."""
+
+    # The legacy tiny fixture numbers simulations independently per split.
+    # Give this OOD-specific test globally unique simulation IDs so it
+    # reproduces the invariant enforced by the real generated datasets.
+    offsets = {
+        "train": 0,
+        "validation": 1000,
+        "test": 2000,
+    }
+
+    for split, offset in offsets.items():
+        metadata_path = (
+            tiny_dataset / "splits" / f"metadata_{split}.csv"
+        )
+        metadata = pd.read_csv(metadata_path)
+
+        original_ids = metadata["simulation_id"].astype(str).unique()
+        mapping = {
+            simulation_id: f"ood_sim_{offset + index:04d}"
+            for index, simulation_id in enumerate(original_ids)
+        }
+
+        metadata["simulation_id"] = (
+            metadata["simulation_id"].astype(str).map(mapping)
+        )
+        metadata.to_csv(metadata_path, index=False)
+
+    bundle = load_dataset_bundle(tiny_dataset, "x")
+
+    external = load_external_dataset(
+        tiny_dataset,
+        "x",
+        bundle.scaler,
+        bundle.train.feature_names,
+    )
+
+    expected_rows = sum(
+        len(pd.read_csv(tiny_dataset / "splits" / f"y_{split}.csv"))
+        for split in ("train", "validation", "test")
+    )
+
+    assert len(external.y) == expected_rows
+    assert len(external.metadata) == expected_rows
+    assert external.feature_names == bundle.train.feature_names
+
+    simulations_per_split = {
+        split: set(
+            external.metadata.loc[
+                external.metadata["split"] == split,
+                "simulation_id",
+            ].astype(str)
+        )
+        for split in ("train", "validation", "test")
+    }
+
+    assert simulations_per_split["train"].isdisjoint(
+        simulations_per_split["validation"]
+    )
+    assert simulations_per_split["train"].isdisjoint(
+        simulations_per_split["test"]
+    )
+    assert simulations_per_split["validation"].isdisjoint(
+        simulations_per_split["test"]
+    )
+
+    # Deliberately contaminate validation with one train simulation.
+    train_simulation = next(iter(simulations_per_split["train"]))
+
+    validation_metadata_path = (
+        tiny_dataset / "splits" / "metadata_validation.csv"
+    )
+    validation_metadata = pd.read_csv(validation_metadata_path)
+
+    validation_simulation = (
+        validation_metadata["simulation_id"].astype(str).iloc[0]
+    )
+
+    validation_metadata.loc[
+        validation_metadata["simulation_id"].astype(str)
+        == validation_simulation,
+        "simulation_id",
+    ] = train_simulation
+
+    validation_metadata.to_csv(
+        validation_metadata_path,
+        index=False,
+    )
+
+    with pytest.raises(
+        ValueError,
+        match="External simulation IDs overlap across splits",
+    ):
+        load_external_dataset(
+            tiny_dataset,
+            "x",
+            bundle.scaler,
+            bundle.train.feature_names,
+        )

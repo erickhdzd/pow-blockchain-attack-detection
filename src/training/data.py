@@ -133,6 +133,63 @@ def load_external_split(
     )
 
 
+def load_external_dataset(
+    dataset_root: str | Path,
+    x_prefix: str,
+    scaler: StandardScaler,
+    expected_features: tuple[str, ...],
+    drop_features: tuple[str, ...] = (),
+) -> SplitData:
+    """Load all external splits as one evaluation-only dataset."""
+
+    split_names = ("train", "validation", "test")
+    splits = [
+        load_external_split(
+            dataset_root,
+            x_prefix,
+            split,
+            scaler,
+            expected_features,
+            drop_features,
+        )
+        for split in split_names
+    ]
+
+    simulation_sets = [
+        set(split.metadata["simulation_id"].astype(str))
+        for split in splits
+    ]
+
+    overlaps: set[str] = set()
+    for index, left in enumerate(simulation_sets):
+        for right in simulation_sets[index + 1:]:
+            overlaps.update(left & right)
+
+    if overlaps:
+        raise ValueError(
+            "External simulation IDs overlap across splits: "
+            f"{sorted(overlaps)}."
+        )
+
+    metadata = pd.concat(
+        [split.metadata for split in splits],
+        ignore_index=True,
+    )
+
+    return SplitData(
+        x=np.concatenate([split.x for split in splits], axis=0).astype(
+            np.float32,
+            copy=False,
+        ),
+        y=np.concatenate([split.y for split in splits]).astype(
+            np.int64,
+            copy=False,
+        ),
+        metadata=metadata,
+        feature_names=expected_features,
+    )
+
+
 @dataclass(slots=True)
 class SequenceData:
     """Contiguous windows that never cross simulation boundaries."""
