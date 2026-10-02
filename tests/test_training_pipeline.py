@@ -15,6 +15,7 @@ from src.training.config import TrainingConfig, load_training_config
 from src.training.data import (
     SplitData,
     load_dataset_bundle,
+    load_external_split,
     make_aligned_dataset_views,
     make_aligned_split_views,
     make_endpoint_view,
@@ -488,3 +489,33 @@ def test_32_feature_ablation_preserves_samples_and_removes_only_requested_featur
         assert len(full_split.y) == len(ablated_split.y)
         assert np.array_equal(full_split.y, ablated_split.y)
         assert full_split.metadata.equals(ablated_split.metadata)
+
+
+def test_33_external_split_uses_id_scaler_without_refitting(
+    tiny_dataset: Path,
+) -> None:
+    """External evaluation must reuse the scaler fitted on ID training data."""
+
+    bundle = load_dataset_bundle(tiny_dataset, "x")
+
+    external = load_external_split(
+        tiny_dataset,
+        "x",
+        "test",
+        bundle.scaler,
+        bundle.train.feature_names,
+    )
+
+    raw_test = pd.read_csv(tiny_dataset / "splits" / "x_test.csv")
+    expected = bundle.scaler.transform(
+        raw_test.to_numpy(dtype=np.float32)
+    ).astype(np.float32)
+
+    assert np.allclose(external.x, expected)
+    assert external.feature_names == bundle.train.feature_names
+    assert np.array_equal(
+        external.y,
+        pd.read_csv(tiny_dataset / "splits" / "y_test.csv")[
+            "attack_label"
+        ].to_numpy(dtype=np.int64),
+    )

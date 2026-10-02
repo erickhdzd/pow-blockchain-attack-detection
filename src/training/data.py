@@ -92,6 +92,47 @@ def load_dataset_bundle(
     )
 
 
+def load_external_split(
+    dataset_root: str | Path,
+    x_prefix: str,
+    split: str,
+    scaler: StandardScaler,
+    expected_features: tuple[str, ...],
+    drop_features: tuple[str, ...] = (),
+) -> SplitData:
+    """Load an external split using a scaler fitted on the ID training data."""
+
+    root = Path(dataset_root)
+    x, y, metadata = _read_split(root, split, x_prefix)
+
+    if drop_features:
+        missing = [
+            feature
+            for feature in drop_features
+            if feature not in x.columns
+        ]
+        if missing:
+            raise ValueError(
+                f"Cannot drop missing external features: {sorted(set(missing))}."
+            )
+        x = x.drop(columns=list(drop_features))
+
+    feature_names = tuple(x.columns)
+    if feature_names != expected_features:
+        raise ValueError(
+            "External feature schema differs from the ID training schema."
+        )
+
+    transformed = scaler.transform(x.to_numpy(dtype=np.float32))
+
+    return SplitData(
+        x=np.asarray(transformed, dtype=np.float32),
+        y=y.to_numpy(dtype=np.int64),
+        metadata=metadata.reset_index(drop=True),
+        feature_names=feature_names,
+    )
+
+
 @dataclass(slots=True)
 class SequenceData:
     """Contiguous windows that never cross simulation boundaries."""
