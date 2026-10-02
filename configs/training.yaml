@@ -18,6 +18,12 @@ tasks:
     x_prefix: "x"
   early:
     x_prefix: "x_early"
+  general_no_hash_proxies:
+    x_prefix: "x"
+    drop_features: ["dominant_miner_ratio", "miner_hhi"]
+  early_no_hash_proxies:
+    x_prefix: "x_early"
+    drop_features: ["dominant_miner_ratio", "miner_hhi"]
 
 classical_models:
   logistic_regression:

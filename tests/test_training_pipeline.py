@@ -454,3 +454,37 @@ paths:
     audit = manifest["aligned_endpoints"]["general"]
     assert audit["test_samples"] == int(runs["test_samples"].iloc[0])
     assert audit["test_sample_id_sha256"] == runs["evaluation_sample_id_sha256"].iloc[0]
+
+
+def test_32_feature_ablation_preserves_samples_and_removes_only_requested_features(
+    tiny_dataset: Path,
+) -> None:
+    """Feature ablation must change only the requested input dimensions."""
+
+    for split in ("train", "validation", "test"):
+        x_path = tiny_dataset / "splits" / f"x_{split}.csv"
+        x = pd.read_csv(x_path)
+        x["dominant_miner_ratio"] = np.linspace(0.1, 0.9, len(x))
+        x["miner_hhi"] = np.linspace(0.2, 0.8, len(x))
+        x.to_csv(x_path, index=False)
+
+    full = load_dataset_bundle(tiny_dataset, "x")
+    ablated = load_dataset_bundle(
+        tiny_dataset,
+        "x",
+        drop_features=("dominant_miner_ratio", "miner_hhi"),
+    )
+
+    removed = {"dominant_miner_ratio", "miner_hhi"}
+
+    assert set(full.train.feature_names) - set(ablated.train.feature_names) == removed
+    assert len(ablated.train.feature_names) == len(full.train.feature_names) - len(removed)
+
+    for full_split, ablated_split in (
+        (full.train, ablated.train),
+        (full.validation, ablated.validation),
+        (full.test, ablated.test),
+    ):
+        assert len(full_split.y) == len(ablated_split.y)
+        assert np.array_equal(full_split.y, ablated_split.y)
+        assert full_split.metadata.equals(ablated_split.metadata)

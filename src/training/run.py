@@ -209,7 +209,15 @@ def run_experiments(config_path: str | Path, profile: str) -> Path:
     confusion_totals: dict[tuple[str, str], np.ndarray] = {}
     endpoint_audit: dict[str, dict[str, Any]] = {}
     for task, task_settings in tasks.items():
-        bundle = load_dataset_bundle(config.dataset_root, str(task_settings["x_prefix"]))
+        drop_features = tuple(
+            str(feature)
+            for feature in task_settings.get("drop_features", ())
+        )
+        bundle = load_dataset_bundle(
+            config.dataset_root,
+            str(task_settings["x_prefix"]),
+            drop_features=drop_features,
+        )
         views = make_aligned_dataset_views(
             bundle,
             config.sequence_length,
@@ -217,6 +225,8 @@ def run_experiments(config_path: str | Path, profile: str) -> Path:
         )
         endpoint_audit[task] = {
             **_sample_counts(views),
+            "feature_count": len(views.train.endpoints.feature_names),
+            "drop_features": list(drop_features),
             "test_sample_id_sha256": _sample_id_sha256(views.test.endpoints.metadata),
             "test_class_counts": {
                 str(label): int(np.sum(views.test.endpoints.y == label))

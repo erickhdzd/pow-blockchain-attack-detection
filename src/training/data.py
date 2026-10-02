@@ -38,14 +38,31 @@ def _read_split(root: Path, split: str, x_prefix: str) -> tuple[pd.DataFrame, pd
     return x, y, metadata
 
 
-def load_dataset_bundle(dataset_root: str | Path, x_prefix: str) -> DatasetBundle:
-    """Load splits and standardize features using training data only."""
+def load_dataset_bundle(
+    dataset_root: str | Path,
+    x_prefix: str,
+    drop_features: tuple[str, ...] = (),
+) -> DatasetBundle:
+    """Load splits, optionally ablate features, and fit scaling on training only."""
 
     root = Path(dataset_root)
     raw: dict[str, tuple[pd.DataFrame, pd.Series, pd.DataFrame]] = {
         split: _read_split(root, split, x_prefix)
         for split in ("train", "validation", "test")
     }
+    if drop_features:
+        missing = [
+            feature
+            for feature in drop_features
+            if any(feature not in raw[split][0].columns for split in raw)
+        ]
+        if missing:
+            raise ValueError(f"Cannot drop missing features: {sorted(set(missing))}.")
+        raw = {
+            split: (x.drop(columns=list(drop_features)), y, metadata)
+            for split, (x, y, metadata) in raw.items()
+        }
+
     feature_names = tuple(raw["train"][0].columns)
     if any(tuple(raw[split][0].columns) != feature_names for split in raw):
         raise ValueError("Feature schemas differ across splits.")
