@@ -1,0 +1,53 @@
+experiment:
+  base_seed: 2027
+  scenarios_per_class: 75
+  duration_blocks: 192
+  block_interval_seconds: 600.0
+
+scenarios:
+  attack_window_length_blocks:
+    normal: [8, 40]
+    double_spend: [8, 40]
+    selfish_mining: [2, 12]
+    majority_attack: [1, 8]
+  attack_start_margin_blocks: 24
+  num_nodes: [10, 30]
+  num_miners: [5, 12]
+
+attacks:
+  double_spend:
+    attacker_hash_share: [0.10, 0.45]
+    target_confirmations: [2, 3, 4, 6]
+  selfish_mining:
+    attacker_hash_share: [0.10, 0.45]
+    gamma: [0.00, 1.00]
+  majority_attack:
+    attacker_hash_share: [0.51, 0.70]
+
+network_profiles:
+  low:
+    base_latency_ms: [30.0, 80.0]
+    latency_std_ms: [5.0, 15.0]
+    packet_loss_probability: [0.000, 0.002]
+  medium:
+    base_latency_ms: [80.0, 180.0]
+    latency_std_ms: [15.0, 40.0]
+    packet_loss_probability: [0.000, 0.010]
+  high:
+    base_latency_ms: [180.0, 350.0]
+    latency_std_ms: [40.0, 100.0]
+    packet_loss_probability: [0.005, 0.030]
+
+mining:
+  concentration_alpha:
+    decentralized: 8.0
+    moderate: 2.0
+    concentrated: 0.5
+
+splits:
+  train: 0.70
+  validation: 0.15
+  test: 0.15
+
+output:
+  root: "data"

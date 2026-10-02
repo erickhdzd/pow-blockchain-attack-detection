@@ -1,0 +1,19 @@
+task,best_model,best_display_name,comparison_model,comparison_display_name,best_macro_f1_mean,comparison_macro_f1_mean,mean_difference,wilcoxon_statistic,p_value,p_holm,statistical_note
+general,gru,GRU,logistic_regression,Logistic Regression,0.5864896053358759,0.3414587915493464,0.24503081378652952,0.0,0.0625,0.5625,Exploratory paired comparison across five seeds; Holm-corrected within task.
+general,gru,GRU,random_forest,Random Forest,0.5864896053358759,0.43805011371212776,0.14843949162374814,0.0,0.0625,0.5625,Exploratory paired comparison across five seeds; Holm-corrected within task.
+general,gru,GRU,hist_gradient_boosting,HistGradientBoosting,0.5864896053358759,0.3737333071484682,0.2127562981874077,0.0,0.0625,0.5625,Exploratory paired comparison across five seeds; Holm-corrected within task.
+general,gru,GRU,xgboost,XGBoost,0.5864896053358759,0.42657798106895706,0.15991162426691885,0.0,0.0625,0.5625,Exploratory paired comparison across five seeds; Holm-corrected within task.
+general,gru,GRU,mlp,MLP,0.5864896053358759,0.36457791898119735,0.22191168635467856,0.0,0.0625,0.5625,Exploratory paired comparison across five seeds; Holm-corrected within task.
+general,gru,GRU,cnn1d,1D-CNN,0.5864896053358759,0.5174973679463821,0.06899223738949378,0.0,0.0625,0.5625,Exploratory paired comparison across five seeds; Holm-corrected within task.
+general,gru,GRU,lstm,LSTM,0.5864896053358759,0.567277995607512,0.019211609728363888,3.0,0.3125,0.625,Exploratory paired comparison across five seeds; Holm-corrected within task.
+general,gru,GRU,cnn_lstm,CNN-LSTM,0.5864896053358759,0.5629122985068126,0.023577306829063338,4.0,0.4375,0.625,Exploratory paired comparison across five seeds; Holm-corrected within task.
+general,gru,GRU,transformer,Transformer,0.5864896053358759,0.5155752545415611,0.07091435079431485,0.0,0.0625,0.5625,Exploratory paired comparison across five seeds; Holm-corrected within task.
+early,cnn_lstm,CNN-LSTM,logistic_regression,Logistic Regression,0.5768795241437636,0.3385905323441315,0.23828899179963214,0.0,0.0625,0.5625,Exploratory paired comparison across five seeds; Holm-corrected within task.
+early,cnn_lstm,CNN-LSTM,random_forest,Random Forest,0.5768795241437636,0.4664120297381478,0.11046749440561582,0.0,0.0625,0.5625,Exploratory paired comparison across five seeds; Holm-corrected within task.
+early,cnn_lstm,CNN-LSTM,hist_gradient_boosting,HistGradientBoosting,0.5768795241437636,0.3737882168300226,0.20309130731374103,0.0,0.0625,0.5625,Exploratory paired comparison across five seeds; Holm-corrected within task.
+early,cnn_lstm,CNN-LSTM,xgboost,XGBoost,0.5768795241437636,0.43034128653435355,0.1465382376094101,0.0,0.0625,0.5625,Exploratory paired comparison across five seeds; Holm-corrected within task.
+early,cnn_lstm,CNN-LSTM,mlp,MLP,0.5768795241437636,0.4076589574621182,0.16922056668164542,0.0,0.0625,0.5625,Exploratory paired comparison across five seeds; Holm-corrected within task.
+early,cnn_lstm,CNN-LSTM,cnn1d,1D-CNN,0.5768795241437636,0.4911012936560886,0.08577823048767502,0.0,0.0625,0.5625,Exploratory paired comparison across five seeds; Holm-corrected within task.
+early,cnn_lstm,CNN-LSTM,lstm,LSTM,0.5768795241437636,0.5687741857422017,0.008105338401561912,5.0,0.625,0.875,Exploratory paired comparison across five seeds; Holm-corrected within task.
+early,cnn_lstm,CNN-LSTM,gru,GRU,0.5768795241437636,0.573640075395246,0.0032394487485176704,4.0,0.4375,0.875,Exploratory paired comparison across five seeds; Holm-corrected within task.
+early,cnn_lstm,CNN-LSTM,transformer,Transformer,0.5768795241437636,0.5147796463834686,0.06209987776029502,0.0,0.0625,0.5625,Exploratory paired comparison across five seeds; Holm-corrected within task.

@@ -1,0 +1,68 @@
+{
+  "audit": {
+    "evaluation_sample_id_sha256": "63809aac07dc7a634d227508dd96f12fdf2e1c373c971794c8b267e43b845ead",
+    "macro_f1_winners": {
+      "early": "cnn_lstm",
+      "general": "gru"
+    },
+    "models": [
+      "logistic_regression",
+      "random_forest",
+      "hist_gradient_boosting",
+      "xgboost",
+      "mlp",
+      "cnn1d",
+      "lstm",
+      "gru",
+      "cnn_lstm",
+      "transformer"
+    ],
+    "run_count": 100,
+    "seeds": [
+      42,
+      123,
+      2026,
+      2027,
+      2028
+    ],
+    "source_grid_sha256": "1d4e3e038efabe00a26de3c44765e428d5b0e7534cf65fff2f7f656820f32cdf",
+    "tasks": [
+      "general",
+      "early"
+    ],
+    "test_class_counts": {
+      "0": 1882,
+      "1": 69,
+      "2": 16,
+      "3": 13
+    },
+    "test_samples": 1980,
+    "train_samples": 9540,
+    "validation_samples": 1980
+  },
+  "generated_files": {
+    "README.md": "793afb8ce5c2f54e11371c4dab38a5bfaf66128dbb1d370bb991c85fed9d5128",
+    "audit.json": "c462c6599f6fa2abb4c95433604efcd5d8750aa310862c09cce0ff14518c2b0b",
+    "figures/early__cnn_lstm__confusion.png": "d02055b109f09d7556472e0b18b7bfeeeb12f073d361600c09f0342ed7cd26d9",
+    "figures/general__gru__confusion.png": "744f21631592ed57d079dd155b088d411ccb25a8e0caac5c6ffc0ad63a91cf96",
+    "figures/macro_f1_general_vs_early.png": "2487eec225180ea301897410dc9d2e39a9d563977a1506bf259bb4e2b413ce3e",
+    "figures/macro_f1_seed_stability.png": "013d4cbd2f5f037c3e594a405ec168241b06bd28450da03f65942b74a9af5eec",
+    "figures/performance_efficiency.png": "e7b78a02bdc96827b556d96e642ee4297b033918263c76427678d2be0129eed1",
+    "figures/top_models_per_class_f1.png": "a2286ed56fef7e97cd8d4c853a464fee67ad53637593ec7fa7b6cb9a0e9435f7",
+    "statistics/best_vs_others_macro_f1.csv": "b0d8d55ad50c7729648b9172c498b2a1e78759dd8e0026241296bea5d87999dc",
+    "tables/efficiency.csv": "c28154354d1c953587c9b7796fd43ba766afbc9e84ed0971efab6ee41f03a03f",
+    "tables/general_vs_early.csv": "fda8e034de9400f1a47ff583d6cc394a854b34b4f667a3910e08dd912101190b",
+    "tables/model_comparison_paper.csv": "fe334ee9b92c3a4c699e1c2b727cb81a4cd329ed94cc1f0c358b54d247e8766d",
+    "tables/model_comparison_paper.tex": "70448ca5283340f15e2afde839ee2df6ec7347aae7c00207b56f2fcd24944847",
+    "tables/top_models_per_class.csv": "28b4713253daca1c94c64b463c12a2f991ec0c87fe6e4f3770f9b04552fe86b6",
+    "tables/top_models_per_class.tex": "f0e92e4c3f772d471456b3e237acf88cdd11bf55f9811417788144ae077dd271"
+  },
+  "generator": "generate_paper_assets.py",
+  "sources": {
+    "configs/training.yaml": "59765c8d1d5250ec6f735a73fd5294f807440a4fbb41d3546a846b410ca85bb8",
+    "data/manifests/dataset_manifest.json": "b4aed67aa2e90d197979666020e28507b88f9d1a45a587c6f25bdbb133e963c8",
+    "results/manifests/training_manifest.json": "62a14f81adee14cdfed2307f2f46d238c99812997d08491e3f725f8e85c0a906",
+    "results/metrics/per_class_metrics.csv": "c1c578c61afab634af833e2c8c17fe94cc7ba48e31bca792ec02bf85889328a0",
+    "results/metrics/run_metrics.csv": "fb31e0efee818834937dcd95cf3265c18c170d273f5fbc33bcaae29cfa87442e"
+  }
+}

@@ -1,0 +1,41 @@
+{
+  "evaluation_sample_id_sha256": "63809aac07dc7a634d227508dd96f12fdf2e1c373c971794c8b267e43b845ead",
+  "macro_f1_winners": {
+    "early": "cnn_lstm",
+    "general": "gru"
+  },
+  "models": [
+    "logistic_regression",
+    "random_forest",
+    "hist_gradient_boosting",
+    "xgboost",
+    "mlp",
+    "cnn1d",
+    "lstm",
+    "gru",
+    "cnn_lstm",
+    "transformer"
+  ],
+  "run_count": 100,
+  "seeds": [
+    42,
+    123,
+    2026,
+    2027,
+    2028
+  ],
+  "source_grid_sha256": "1d4e3e038efabe00a26de3c44765e428d5b0e7534cf65fff2f7f656820f32cdf",
+  "tasks": [
+    "general",
+    "early"
+  ],
+  "test_class_counts": {
+    "0": 1882,
+    "1": 69,
+    "2": 16,
+    "3": 13
+  },
+  "test_samples": 1980,
+  "train_samples": 9540,
+  "validation_samples": 1980
+}

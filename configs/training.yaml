@@ -1,0 +1,69 @@
+training:
+  base_seed: 2027
+  seeds: [42, 123, 2026, 2027, 2028]
+  device: "auto"
+  num_workers: 0
+  batch_size: 256
+  max_epochs: 25
+  patience: 5
+  learning_rate: 0.001
+  weight_decay: 0.0001
+  sequence_length: 16
+  sequence_stride: 4
+  gradient_clip_norm: 1.0
+  save_models: false
+
+tasks:
+  general:
+    x_prefix: "x"
+  early:
+    x_prefix: "x_early"
+
+classical_models:
+  logistic_regression:
+    enabled: true
+  random_forest:
+    enabled: true
+    n_estimators: 300
+  hist_gradient_boosting:
+    enabled: true
+  xgboost:
+    enabled: true
+    n_estimators: 300
+    max_depth: 6
+    learning_rate: 0.05
+
+neural_models:
+  mlp:
+    enabled: true
+    hidden_dim: 128
+    dropout: 0.20
+  cnn1d:
+    enabled: true
+    hidden_dim: 128
+    dropout: 0.20
+  lstm:
+    enabled: true
+    hidden_dim: 128
+    num_layers: 2
+    dropout: 0.20
+  gru:
+    enabled: true
+    hidden_dim: 128
+    num_layers: 2
+    dropout: 0.20
+  cnn_lstm:
+    enabled: true
+    hidden_dim: 128
+    dropout: 0.20
+  transformer:
+    enabled: true
+    d_model: 128
+    nhead: 4
+    num_layers: 3
+    dim_feedforward: 256
+    dropout: 0.20
+
+paths:
+  dataset_root: "data"
+  results_root: "results"

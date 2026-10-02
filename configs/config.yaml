@@ -1,0 +1,58 @@
+project:
+  name: "blockchain_attack_detection"
+  seed: 42
+
+simulation:
+  num_nodes: 50
+  num_miners: 10
+  duration_blocks: 2000
+  block_interval_seconds: 600.0
+  transaction_rate_per_second: 2.0
+  block_capacity: 2000
+  confirmation_depth: 6
+
+network:
+  base_latency_ms: 100.0
+  latency_std_ms: 20.0
+  packet_loss_probability: 0.0
+
+mining:
+  default_attacker_hash_share: 0.30
+
+attacks:
+  enabled: false
+  attack_type: "normal"
+  start_block: 500
+  end_block: 1500
+
+  double_spend:
+    transaction_value: 1.0
+    target_confirmations: 6
+    attacker_hash_share: 0.30
+
+  selfish_mining:
+    gamma: 0.50
+    attacker_hash_share: 0.30
+
+  majority_attack:
+    attacker_hash_share: 0.51
+
+telemetry:
+  enabled: true
+  output_interval_blocks: 1
+  observable_features_only: true
+
+dataset:
+  raw_output_path: "data/raw/blockchain_telemetry.csv"
+  processed_output_path: "data/processed/blockchain_telemetry.csv"
+  splits_directory: "data/splits"
+
+results:
+  root_directory: "results"
+  figures_directory: "results/figures"
+  tables_directory: "results/tables"
+  logs_directory: "results/logs"
+  models_directory: "results/models"
+
+reproducibility:
+  deterministic: true

@@ -1,0 +1,14 @@
+\begin{tabular}{lllrlrrrrrrrrr}
+\toprule
+task & model & display\_name & class\_id & class\_name & precision\_mean & precision\_std & recall\_mean & recall\_std & f1\_mean & f1\_std & false\_positive\_rate\_mean & detection\_rate\_mean & support \\
+\midrule
+general & gru & GRU & 0 & normal & 0.9885 & 0.0008 & 0.9643 & 0.0073 & 0.9762 & 0.0034 & 0.2163 & 0.9643 & 1882 \\
+general & gru & GRU & 1 & double\_spend & 0.4457 & 0.0545 & 0.6406 & 0.0314 & 0.5232 & 0.0311 & 0.0295 & 0.6406 & 69 \\
+general & gru & GRU & 2 & selfish\_mining & 0.1742 & 0.0519 & 0.2375 & 0.0815 & 0.1968 & 0.0524 & 0.0095 & 0.2375 & 16 \\
+general & gru & GRU & 3 & majority\_attack & 0.5325 & 0.0677 & 0.8462 & 0.0544 & 0.6498 & 0.0403 & 0.0051 & 0.8462 & 13 \\
+early & cnn\_lstm & CNN-LSTM & 0 & normal & 0.9885 & 0.0006 & 0.9646 & 0.0048 & 0.9764 & 0.0021 & 0.2163 & 0.9646 & 1882 \\
+early & cnn\_lstm & CNN-LSTM & 1 & double\_spend & 0.4351 & 0.0341 & 0.6261 & 0.0330 & 0.5119 & 0.0172 & 0.0297 & 0.6261 & 69 \\
+early & cnn\_lstm & CNN-LSTM & 2 & selfish\_mining & 0.1989 & 0.0467 & 0.2750 & 0.0559 & 0.2244 & 0.0305 & 0.0097 & 0.2750 & 16 \\
+early & cnn\_lstm & CNN-LSTM & 3 & majority\_attack & 0.4945 & 0.0598 & 0.7538 & 0.0843 & 0.5948 & 0.0544 & 0.0052 & 0.7538 & 13 \\
+\bottomrule
+\end{tabular}
