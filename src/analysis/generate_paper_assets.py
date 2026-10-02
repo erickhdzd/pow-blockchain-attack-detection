@@ -77,7 +77,8 @@ def holm_adjust(p_values: list[float]) -> list[float]:
     adjusted = np.empty(len(p_values), dtype=float)
     running = 0.0
     m = len(p_values)
-    for rank, index in enumerate(order):
+    for rank, raw_index in enumerate(order):
+        index = int(raw_index)
         candidate = (m - rank) * p_values[index]
         running = max(running, candidate)
         adjusted[index] = min(1.0, running)
