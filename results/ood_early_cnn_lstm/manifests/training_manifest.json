@@ -1,0 +1,29 @@
+{
+  "aligned_endpoints": {
+    "early": {
+      "drop_features": [],
+      "feature_count": 16,
+      "test_class_counts": {
+        "0": 1882,
+        "1": 69,
+        "2": 16,
+        "3": 13
+      },
+      "test_sample_id_sha256": "63809aac07dc7a634d227508dd96f12fdf2e1c373c971794c8b267e43b845ead",
+      "test_samples": 1980,
+      "train_samples": 9540,
+      "validation_samples": 1980
+    }
+  },
+  "config_sha256": "16f6b14ae03285d13c38f8cb9886321222c5a4163dd4e6cf835fbf8a9d270e66",
+  "cuda_available": true,
+  "cuda_version": "13.2",
+  "dataset_manifest_sha256": "b4aed67aa2e90d197979666020e28507b88f9d1a45a587c6f25bdbb133e963c8",
+  "numpy": "2.5.2",
+  "pandas": "3.0.5",
+  "profile": "full",
+  "python": "3.14.7",
+  "runs": 5,
+  "scikit_learn": "1.9.0",
+  "torch": "2.13.0+cu132"
+}

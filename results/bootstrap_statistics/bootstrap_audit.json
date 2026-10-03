@@ -1,0 +1,76 @@
+{
+  "bootstrap_replicates": 10000,
+  "bootstrap_seed": 2027,
+  "confidence_interval": "percentile_95",
+  "endpoint_resampling": false,
+  "method": "stratified_simulation_cluster_bootstrap",
+  "scenario_strata": {
+    "DOUBLE_SPEND": [
+      "sim_000083",
+      "sim_000088",
+      "sim_000091",
+      "sim_000095",
+      "sim_000100",
+      "sim_000112",
+      "sim_000116",
+      "sim_000123",
+      "sim_000138",
+      "sim_000139",
+      "sim_000145"
+    ],
+    "MAJORITY_ATTACK": [
+      "sim_000227",
+      "sim_000233",
+      "sim_000236",
+      "sim_000240",
+      "sim_000249",
+      "sim_000250",
+      "sim_000274",
+      "sim_000276",
+      "sim_000278",
+      "sim_000286",
+      "sim_000297"
+    ],
+    "NORMAL": [
+      "sim_000005",
+      "sim_000010",
+      "sim_000022",
+      "sim_000025",
+      "sim_000037",
+      "sim_000040",
+      "sim_000042",
+      "sim_000046",
+      "sim_000048",
+      "sim_000053",
+      "sim_000057"
+    ],
+    "SELFISH_MINING": [
+      "sim_000152",
+      "sim_000165",
+      "sim_000183",
+      "sim_000190",
+      "sim_000198",
+      "sim_000206",
+      "sim_000207",
+      "sim_000210",
+      "sim_000211",
+      "sim_000214",
+      "sim_000223"
+    ]
+  },
+  "seed_aggregation": "metric_then_mean_across_training_seeds",
+  "simulations_per_stratum": {
+    "DOUBLE_SPEND": 11,
+    "MAJORITY_ATTACK": 11,
+    "NORMAL": 11,
+    "SELFISH_MINING": 11
+  },
+  "total_test_simulations": 44,
+  "training_seeds": [
+    42,
+    123,
+    2026,
+    2027,
+    2028
+  ]
+}

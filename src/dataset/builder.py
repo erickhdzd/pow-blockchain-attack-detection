@@ -235,16 +235,15 @@ class DatasetBuilder:
         if attack_type is AttackType.NORMAL:
             return False
         if attack_type is AttackType.DOUBLE_SPEND:
-            status = engine.double_spend_status
-        elif attack_type is AttackType.SELFISH_MINING:
-            status = engine.selfish_mining_status
-        elif attack_type is AttackType.MAJORITY_ATTACK:
-            status = engine.majority_attack_status
-        else:
-            raise ValueError(f"Unsupported attack type: {attack_type!r}.")
-        if status is None:
-            return False
-        return bool(status.successful)
+            double_spend_status = engine.double_spend_status
+            return double_spend_status is not None and bool(double_spend_status.successful)
+        if attack_type is AttackType.SELFISH_MINING:
+            selfish_mining_status = engine.selfish_mining_status
+            return selfish_mining_status is not None and bool(selfish_mining_status.successful)
+        if attack_type is AttackType.MAJORITY_ATTACK:
+            majority_attack_status = engine.majority_attack_status
+            return majority_attack_status is not None and bool(majority_attack_status.successful)
+        raise ValueError(f"Unsupported attack type: {attack_type!r}.")
 
     @staticmethod
     def _metadata_row(

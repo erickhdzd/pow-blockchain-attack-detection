@@ -13,3 +13,16 @@ venv/
 
 # IDE
 .idea/
+
+# Generated external OOD datasets (reproducible, not versioned)
+data/ood_attack/
+data/ood_network/
+data/ood_combined/
+
+# Development/smoke-test artifacts
+results/bootstrap_statistics_smoke/
+results/ood_smoke/
+results/predictions_smoke/
+
+# Preliminary statistical-baseline artifact (not part of final paper results)
+results/statistical_baseline/calibration_raw_preliminary.json

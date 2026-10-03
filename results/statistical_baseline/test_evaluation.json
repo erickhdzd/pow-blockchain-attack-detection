@@ -1,0 +1,45 @@
+{
+  "calibration_artifact": "results/statistical_baseline/calibration_aligned_frozen.json",
+  "confusion_matrix": {
+    "fn": 64,
+    "fp": 114,
+    "tn": 1768,
+    "tp": 34
+  },
+  "feature_count": 8,
+  "features": [
+    "height_std",
+    "consensus_ratio",
+    "latest_block_interval_seconds",
+    "mean_recent_block_interval_seconds",
+    "std_recent_block_interval_seconds",
+    "unique_miner_count",
+    "dominant_miner_ratio",
+    "miner_hhi"
+  ],
+  "method": "robust_statistical_anomaly_baseline",
+  "metrics": {
+    "balanced_accuracy": 0.6431824589559522,
+    "f1": 0.2764227642276423,
+    "mcc": 0.23618323521460097,
+    "precision": 0.22972972972972974,
+    "recall": 0.3469387755102041
+  },
+  "sequence_length": 16,
+  "stride": 4,
+  "task": "binary_attack_detection",
+  "test_binary_counts": {
+    "attack": 98,
+    "normal": 1882
+  },
+  "test_endpoint_count": 1980,
+  "test_multiclass_counts": {
+    "0": 1882,
+    "1": 69,
+    "2": 16,
+    "3": 13
+  },
+  "test_simulation_count": 44,
+  "threshold": 2.201904709691573,
+  "threshold_source": "validation"
+}

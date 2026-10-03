@@ -1,0 +1,67 @@
+{
+  "alignment": {
+    "endpoint": "final_timestep",
+    "sequence_length": 16,
+    "stride": 4,
+    "train_endpoint_count": 9540,
+    "train_simulation_count": 212,
+    "validation_endpoint_count": 1980,
+    "validation_simulation_count": 44
+  },
+  "attack_definition": "multiclass_label != 0",
+  "feature_count": 8,
+  "features": [
+    "height_std",
+    "consensus_ratio",
+    "latest_block_interval_seconds",
+    "mean_recent_block_interval_seconds",
+    "std_recent_block_interval_seconds",
+    "unique_miner_count",
+    "dominant_miner_ratio",
+    "miner_hhi"
+  ],
+  "location": "normal_train_median",
+  "method": "robust_statistical_anomaly_baseline",
+  "normal_label": 0,
+  "normal_median": {
+    "consensus_ratio": 0.9473684430122375,
+    "dominant_miner_ratio": 0.30000001192092896,
+    "height_std": 0.2232968807220459,
+    "latest_block_interval_seconds": 404.72406005859375,
+    "mean_recent_block_interval_seconds": 595.260986328125,
+    "miner_hhi": 0.20999999344348907,
+    "std_recent_block_interval_seconds": 543.8945922851562,
+    "unique_miner_count": 6.0
+  },
+  "normal_scale": {
+    "consensus_ratio": 0.0208084477186203,
+    "dominant_miner_ratio": 0.07413001767396926,
+    "height_std": 0.040530874210596084,
+    "latest_block_interval_seconds": 418.4981459838867,
+    "mean_recent_block_interval_seconds": 135.2346296447754,
+    "miner_hhi": 0.06671700265109538,
+    "std_recent_block_interval_seconds": 162.29624221801757,
+    "unique_miner_count": 1.4826
+  },
+  "normal_train_count": 9049,
+  "scale": "1.4826_times_normal_train_mad",
+  "score": "root_mean_squared_robust_z",
+  "task": "binary_attack_detection",
+  "threshold": 2.201904709691573,
+  "threshold_objective": "attack_f1",
+  "threshold_source": "validation",
+  "threshold_tiebreakers": [
+    "mcc",
+    "balanced_accuracy",
+    "lower_threshold"
+  ],
+  "validation_attack_count": 106,
+  "validation_count": 1980,
+  "validation_metrics": {
+    "balanced_accuracy": 0.6233664243571414,
+    "f1": 0.29411764705882354,
+    "mcc": 0.256060065082849,
+    "precision": 0.30612244897959184,
+    "recall": 0.2830188679245283
+  }
+}
