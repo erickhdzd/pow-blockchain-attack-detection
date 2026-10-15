@@ -18,18 +18,12 @@ class NetworkParameters:
     packet_loss_probability: float
 
     def __post_init__(self) -> None:
-        if (
-            not isfinite(self.base_latency_ms)
-            or self.base_latency_ms < 0.0
-        ):
+        if not isfinite(self.base_latency_ms) or self.base_latency_ms < 0.0:
             raise ValueError(
                 "Base network latency must be a finite non-negative value."
             )
 
-        if (
-            not isfinite(self.latency_std_ms)
-            or self.latency_std_ms < 0.0
-        ):
+        if not isfinite(self.latency_std_ms) or self.latency_std_ms < 0.0:
             raise ValueError(
                 "Network latency standard deviation must be a finite "
                 "non-negative value."
@@ -58,42 +52,25 @@ class BlockDelivery:
 
     def __post_init__(self) -> None:
         if not self.source_node_id:
-            raise ValueError(
-                "Source node identifier must not be empty."
-            )
+            raise ValueError("Source node identifier must not be empty.")
 
         if not self.target_node_id:
-            raise ValueError(
-                "Target node identifier must not be empty."
-            )
+            raise ValueError("Target node identifier must not be empty.")
 
         if self.source_node_id == self.target_node_id:
-            raise ValueError(
-                "Source and target node identifiers must differ."
-            )
+            raise ValueError("Source and target node identifiers must differ.")
 
         if not self.block_hash:
-            raise ValueError(
-                "Delivered block hash must not be empty."
-            )
+            raise ValueError("Delivered block hash must not be empty.")
 
         if not isfinite(self.sent_at) or self.sent_at < 0.0:
-            raise ValueError(
-                "Delivery send time must be a finite non-negative value."
-            )
+            raise ValueError("Delivery send time must be a finite non-negative value.")
 
-        if (
-            not isfinite(self.delivery_time)
-            or self.delivery_time < self.sent_at
-        ):
-            raise ValueError(
-                "Delivery time must be finite and not precede send time."
-            )
+        if not isfinite(self.delivery_time) or self.delivery_time < self.sent_at:
+            raise ValueError("Delivery time must be finite and not precede send time.")
 
         if not isfinite(self.latency_ms) or self.latency_ms < 0.0:
-            raise ValueError(
-                "Delivery latency must be a finite non-negative value."
-            )
+            raise ValueError("Delivery latency must be a finite non-negative value.")
 
 
 @dataclass(order=True, slots=True)
@@ -108,6 +85,7 @@ class _PendingDelivery:
     latency_ms: float = field(compare=False)
     block: Block = field(compare=False)
 
+
 class Node:
     """Represent a network node with its own canonical blockchain."""
 
@@ -116,9 +94,7 @@ class Node:
         node_id: str,
     ) -> None:
         if not node_id:
-            raise ValueError(
-                "Node identifier must not be empty."
-            )
+            raise ValueError("Node identifier must not be empty.")
 
         self._node_id = node_id
         self._blockchain = Blockchain()
@@ -143,14 +119,10 @@ class Node:
         """Replace the local canonical blockchain with a valid chain."""
 
         if not isinstance(blockchain, Blockchain):
-            raise TypeError(
-                "Node blockchain must be a Blockchain instance."
-            )
+            raise TypeError("Node blockchain must be a Blockchain instance.")
 
         if not blockchain.validate():
-            raise ValueError(
-                "Node blockchain replacement must be valid."
-            )
+            raise ValueError("Node blockchain replacement must be valid.")
 
         self._blockchain = blockchain
 
@@ -191,19 +163,14 @@ class Node:
         candidate_blocks = tuple(chain)
 
         if not candidate_blocks:
-            raise ValueError(
-                "Candidate chain must contain at least the genesis block."
-            )
+            raise ValueError("Candidate chain must contain at least the genesis block.")
 
         if len(candidate_blocks) <= len(self._blockchain.chain):
             return False
 
         candidate = Blockchain()
 
-        if (
-            candidate_blocks[0].block_hash
-            != candidate.chain[0].block_hash
-        ):
+        if candidate_blocks[0].block_hash != candidate.chain[0].block_hash:
             return False
 
         try:
@@ -230,32 +197,20 @@ class Network:
         seed: int,
     ) -> None:
         if not nodes:
-            raise ValueError(
-                "Network must contain at least one node."
-            )
+            raise ValueError("Network must contain at least one node.")
 
         if seed < 0:
-            raise ValueError(
-                "Network random seed must be non-negative."
-            )
+            raise ValueError("Network random seed must be non-negative.")
 
         node_tuple = tuple(nodes)
 
-        node_ids = [
-            node.node_id
-            for node in node_tuple
-        ]
+        node_ids = [node.node_id for node in node_tuple]
 
         if len(node_ids) != len(set(node_ids)):
-            raise ValueError(
-                "Network node identifiers must be unique."
-            )
+            raise ValueError("Network node identifiers must be unique.")
 
         self._nodes = node_tuple
-        self._nodes_by_id = {
-            node.node_id: node
-            for node in node_tuple
-        }
+        self._nodes_by_id = {node.node_id: node for node in node_tuple}
 
         self._parameters = parameters
         self._seed = seed
@@ -330,9 +285,7 @@ class Network:
         try:
             return self._nodes_by_id[node_id]
         except KeyError as exc:
-            raise KeyError(
-                f"Unknown network node: {node_id!r}."
-            ) from exc
+            raise KeyError(f"Unknown network node: {node_id!r}.") from exc
 
     def broadcast_block(
         self,
@@ -343,14 +296,11 @@ class Network:
         """Accept a block at its source and schedule propagation to peers."""
 
         if not isfinite(sent_at) or sent_at < 0.0:
-            raise ValueError(
-                "Broadcast time must be a finite non-negative value."
-            )
+            raise ValueError("Broadcast time must be a finite non-negative value.")
 
         if sent_at < self._last_delivery_time:
             raise ValueError(
-                "Broadcast time must not precede already processed "
-                "network time."
+                "Broadcast time must not precede already processed network time."
             )
 
         source_node = self.get_node(source_node_id)
@@ -375,10 +325,7 @@ class Network:
 
             latency_ms = self._sample_latency_ms()
 
-            delivery_time = (
-                sent_at
-                + latency_ms / 1000.0
-            )
+            delivery_time = sent_at + latency_ms / 1000.0
 
             pending = _PendingDelivery(
                 delivery_time=delivery_time,
@@ -413,9 +360,7 @@ class Network:
             )
 
         if timestamp < self._last_delivery_time:
-            raise ValueError(
-                "Network delivery time must not move backwards."
-            )
+            raise ValueError("Network delivery time must not move backwards.")
 
         results: list[BlockDelivery] = []
 
@@ -423,17 +368,11 @@ class Network:
             self._pending_deliveries
             and self._pending_deliveries[0].delivery_time <= timestamp
         ):
-            pending = heapq.heappop(
-                self._pending_deliveries
-            )
+            pending = heapq.heappop(self._pending_deliveries)
 
-            target_node = self.get_node(
-                pending.target_node_id
-            )
+            target_node = self.get_node(pending.target_node_id)
 
-            accepted = target_node.receive_block(
-                pending.block
-            )
+            accepted = target_node.receive_block(pending.block)
 
             results.append(
                 BlockDelivery(
@@ -462,13 +401,10 @@ class Network:
             return ()
 
         final_delivery_time = max(
-            pending.delivery_time
-            for pending in self._pending_deliveries
+            pending.delivery_time for pending in self._pending_deliveries
         )
 
-        return self.deliver_until(
-            final_delivery_time
-        )
+        return self.deliver_until(final_delivery_time)
 
     def catch_up_node(
         self,
@@ -478,16 +414,10 @@ class Network:
         """Catch up a lagging node when its chain is a source-chain prefix."""
 
         if target_node_id == source_node_id:
-            raise ValueError(
-                "Catch-up source and target nodes must differ."
-            )
+            raise ValueError("Catch-up source and target nodes must differ.")
 
-        source_node = self.get_node(
-            source_node_id
-        )
-        target_node = self.get_node(
-            target_node_id
-        )
+        source_node = self.get_node(source_node_id)
+        target_node = self.get_node(target_node_id)
 
         source_chain = source_node.blockchain.chain
         target_chain = target_node.blockchain.chain
@@ -495,22 +425,14 @@ class Network:
         if len(target_chain) > len(source_chain):
             return False
 
-        source_prefix = source_chain[
-            :len(target_chain)
-        ]
+        source_prefix = source_chain[: len(target_chain)]
 
-        if tuple(
-            block.block_hash
-            for block in source_prefix
-        ) != tuple(
-            block.block_hash
-            for block in target_chain
+        if tuple(block.block_hash for block in source_prefix) != tuple(
+            block.block_hash for block in target_chain
         ):
             return False
 
-        for block in source_chain[
-            len(target_chain):
-        ]:
+        for block in source_chain[len(target_chain) :]:
             if not target_node.receive_block(block):
                 return False
 
@@ -543,9 +465,7 @@ class Network:
     ) -> dict[str, bool]:
         """Reconcile peers with a strictly longer canonical source chain."""
 
-        source_node = self.get_node(
-            source_node_id
-        )
+        source_node = self.get_node(source_node_id)
 
         results: dict[str, bool] = {}
 
@@ -567,10 +487,8 @@ class Network:
                 results[target_node.node_id] = True
                 continue
 
-            results[target_node.node_id] = (
-                target_node.adopt_longer_chain(
-                    source_node.blockchain.chain
-                )
+            results[target_node.node_id] = target_node.adopt_longer_chain(
+                source_node.blockchain.chain
             )
 
         return results
@@ -595,7 +513,4 @@ class Network:
     ) -> bool:
         """Return whether the next peer delivery is dropped."""
 
-        return (
-            self._rng.random()
-            < self._parameters.packet_loss_probability
-        )
+        return self._rng.random() < self._parameters.packet_loss_probability

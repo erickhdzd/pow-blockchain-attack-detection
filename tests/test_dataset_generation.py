@@ -3,7 +3,9 @@ from __future__ import annotations
 import csv
 import hashlib
 import json
+from collections.abc import Buffer
 from pathlib import Path
+from typing import cast
 
 import pytest
 
@@ -78,7 +80,7 @@ def read_rows(path: Path) -> list[dict[str, str]]:
 
 def sha256(path: Path) -> str:
     digest = hashlib.sha256()
-    digest.update(path.read_bytes())
+    digest.update(cast(Buffer, path.read_bytes()))
     return digest.hexdigest()
 
 
@@ -127,23 +129,39 @@ def test_06_scenario_generation_is_exactly_reproducible() -> None:
 
 
 def test_07_different_base_seed_changes_scenarios() -> None:
-    assert ScenarioGenerator(make_plan(1)).generate() != ScenarioGenerator(make_plan(2)).generate()
+    assert (
+        ScenarioGenerator(make_plan(1)).generate()
+        != ScenarioGenerator(make_plan(2)).generate()
+    )
 
 
 def test_08_attack_windows_are_randomized_and_valid() -> None:
     scenarios = ScenarioGenerator(make_plan(scenarios_per_class=12)).generate()
-    windows = {(scenario.attack_start_step, scenario.attack_end_step) for scenario in scenarios}
+    windows = {
+        (scenario.attack_start_step, scenario.attack_end_step) for scenario in scenarios
+    }
     assert len(windows) > 1
     for scenario in scenarios:
-        assert 1 <= scenario.attack_start_step <= scenario.attack_end_step <= scenario.duration_blocks
+        assert (
+            1
+            <= scenario.attack_start_step
+            <= scenario.attack_end_step
+            <= scenario.duration_blocks
+        )
 
 
 def test_09_attack_parameter_ranges_are_respected() -> None:
     plan = make_plan(scenarios_per_class=12)
     for scenario in ScenarioGenerator(plan).generate():
-        assert plan.double_spend_q.minimum <= scenario.double_spend_q <= plan.double_spend_q.maximum
+        assert (
+            plan.double_spend_q.minimum
+            <= scenario.double_spend_q
+            <= plan.double_spend_q.maximum
+        )
         assert plan.selfish_q.minimum <= scenario.selfish_q <= plan.selfish_q.maximum
-        assert plan.selfish_gamma.minimum <= scenario.gamma <= plan.selfish_gamma.maximum
+        assert (
+            plan.selfish_gamma.minimum <= scenario.gamma <= plan.selfish_gamma.maximum
+        )
         assert plan.majority_q.minimum <= scenario.majority_q <= plan.majority_q.maximum
 
 
@@ -263,7 +281,9 @@ def test_21_no_simulation_crosses_split_boundaries(built_dataset: Path) -> None:
             seen[simulation_id] = split
 
 
-def test_22_attack_scenarios_contain_pre_active_and_post_phases(built_dataset: Path) -> None:
+def test_22_attack_scenarios_contain_pre_active_and_post_phases(
+    built_dataset: Path,
+) -> None:
     rows = read_rows(built_dataset / "raw/blockchain_telemetry.csv")
     by_simulation: dict[str, set[str]] = {}
     attack_type: dict[str, str] = {}
@@ -291,7 +311,9 @@ def test_24_scenario_manifest_has_one_row_per_simulation(built_dataset: Path) ->
 
 
 def test_25_manifest_hashes_match_files(built_dataset: Path) -> None:
-    manifest = json.loads((built_dataset / "manifests/dataset_manifest.json").read_text())
+    manifest = json.loads(
+        (built_dataset / "manifests/dataset_manifest.json").read_text()
+    )
     for relative_path, expected_hash in manifest["sha256"].items():
         assert sha256(built_dataset / relative_path) == expected_hash
 
@@ -300,7 +322,10 @@ def test_26_schema_manifest_matches_python_constants(built_dataset: Path) -> Non
     schema = json.loads((built_dataset / "manifests/schema.json").read_text())
     assert tuple(schema["observable_columns"]) == OBSERVABLE_COLUMNS
     assert tuple(schema["model_feature_columns"]) == MODEL_FEATURE_COLUMNS
-    assert tuple(schema["early_detection_feature_columns"]) == EARLY_DETECTION_FEATURE_COLUMNS
+    assert (
+        tuple(schema["early_detection_feature_columns"])
+        == EARLY_DETECTION_FEATURE_COLUMNS
+    )
 
 
 def test_27_raw_sample_ids_are_unique(built_dataset: Path) -> None:
@@ -332,8 +357,14 @@ def test_30_complete_build_is_bitwise_reproducible(tmp_path: Path) -> None:
     DatasetBuilder(plan).build(first)
     DatasetBuilder(plan).build(second)
 
-    first_files = sorted(path.relative_to(first) for path in first.rglob("*") if path.is_file())
-    second_files = sorted(path.relative_to(second) for path in second.rglob("*") if path.is_file())
+    first_files = sorted(
+        path.relative_to(first) for path in first.rglob("*") if path.is_file()
+    )
+    second_files = sorted(
+        path.relative_to(second) for path in second.rglob("*") if path.is_file()
+    )
     assert first_files == second_files
     for relative_path in first_files:
-        assert (first / relative_path).read_bytes() == (second / relative_path).read_bytes()
+        assert (first / relative_path).read_bytes() == (
+            second / relative_path
+        ).read_bytes()

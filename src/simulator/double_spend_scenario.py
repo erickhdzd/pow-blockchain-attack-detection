@@ -175,9 +175,7 @@ class DoubleSpendScenario:
         block.finalize()
 
         if not self._victim_node.receive_block(block):
-            raise RuntimeError(
-                "Victim node rejected the public payment block."
-            )
+            raise RuntimeError("Victim node rejected the public payment block.")
 
         self._attack.register_payment_block(block.height)
         self._update_state()
@@ -215,9 +213,7 @@ class DoubleSpendScenario:
         block.finalize()
 
         if not self._victim_node.receive_block(block):
-            raise RuntimeError(
-                "Victim node rejected the public confirmation block."
-            )
+            raise RuntimeError("Victim node rejected the public confirmation block.")
 
         self._update_state()
 
@@ -266,17 +262,13 @@ class DoubleSpendScenario:
         """Process exactly one public or attacker mining event."""
 
         if not self.started:
-            raise RuntimeError(
-                "Double-spend scenario must be started before mining."
-            )
+            raise RuntimeError("Double-spend scenario must be started before mining.")
 
         if self._state in {
             DoubleSpendScenarioState.SUCCEEDED,
             DoubleSpendScenarioState.FAILED,
         }:
-            raise RuntimeError(
-                "Double-spend scenario has already finished."
-            )
+            raise RuntimeError("Double-spend scenario has already finished.")
 
         if mining_side is DoubleSpendMiningSide.PUBLIC:
             if not public_miner_id:
@@ -297,9 +289,7 @@ class DoubleSpendScenario:
         elif mining_side is DoubleSpendMiningSide.ATTACKER:
             block = self.mine_private_block(timestamp)
         else:
-            raise ValueError(
-                "Unsupported double-spend mining side."
-            )
+            raise ValueError("Unsupported double-spend mining side.")
 
         return block
 
@@ -347,14 +337,11 @@ class DoubleSpendScenario:
             raise RuntimeError("Double-spend scenario has not been started.")
 
         if self._publication_attempted:
-            raise RuntimeError(
-                "Private branch publication has already been attempted."
-            )
+            raise RuntimeError("Private branch publication has already been attempted.")
 
         if not self.can_publish_successfully():
             raise RuntimeError(
-                "Private branch cannot yet produce a confirmed double-spend "
-                "success."
+                "Private branch cannot yet produce a confirmed double-spend success."
             )
 
         self._publication_attempted = True

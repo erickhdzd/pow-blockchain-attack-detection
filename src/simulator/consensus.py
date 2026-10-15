@@ -71,9 +71,7 @@ class ChainSelector:
         canonical_parent = current_chain[parent_height]
 
         if canonical_parent.block_hash != branch.parent_block.block_hash:
-            raise ValueError(
-                "Branch parent is not part of the node's canonical chain."
-            )
+            raise ValueError("Branch parent is not part of the node's canonical chain.")
 
         if branch.height <= old_height:
             return ReorganizationResult(
@@ -94,9 +92,7 @@ class ChainSelector:
             replacement_chain.add_block(block)
 
         if not replacement_chain.validate():
-            raise ValueError(
-                "Candidate replacement chain failed canonical validation."
-            )
+            raise ValueError("Candidate replacement chain failed canonical validation.")
 
         removed_blocks = old_height - parent_height
         added_blocks = branch.length

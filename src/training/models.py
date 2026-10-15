@@ -1,4 +1,5 @@
 """PyTorch neural architectures for tabular and sequential classification."""
+
 from __future__ import annotations
 
 from typing import Any
@@ -38,7 +39,9 @@ class CNN1DClassifier(nn.Module):
             nn.ReLU(),
             nn.AdaptiveAvgPool1d(1),
         )
-        self.head = nn.Sequential(nn.Flatten(), nn.Dropout(dropout), nn.Linear(hidden_dim, 4))
+        self.head = nn.Sequential(
+            nn.Flatten(), nn.Dropout(dropout), nn.Linear(hidden_dim, 4)
+        )
 
     def forward(self, x: torch.Tensor) -> torch.Tensor:
         return self.head(self.features(x.transpose(1, 2)))
@@ -47,7 +50,14 @@ class CNN1DClassifier(nn.Module):
 class RecurrentClassifier(nn.Module):
     """Shared LSTM/GRU sequence classifier."""
 
-    def __init__(self, kind: str, input_dim: int, hidden_dim: int, num_layers: int, dropout: float) -> None:
+    def __init__(
+        self,
+        kind: str,
+        input_dim: int,
+        hidden_dim: int,
+        num_layers: int,
+        dropout: float,
+    ) -> None:
         super().__init__()
         recurrent = nn.LSTM if kind == "lstm" else nn.GRU
         self.rnn = recurrent(
@@ -152,4 +162,6 @@ def build_neural_model(
 def parameter_count(model: nn.Module) -> int:
     """Return the number of trainable parameters."""
 
-    return sum(parameter.numel() for parameter in model.parameters() if parameter.requires_grad)
+    return sum(
+        parameter.numel() for parameter in model.parameters() if parameter.requires_grad
+    )

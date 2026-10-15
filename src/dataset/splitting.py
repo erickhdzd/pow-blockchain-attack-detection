@@ -59,7 +59,9 @@ def assign_simulation_splits(
 
 def _split_counts(total: int, ratios: SplitRatios) -> tuple[int, int, int]:
     if total < 3:
-        raise ValueError("At least three simulations per class are required for splitting.")
+        raise ValueError(
+            "At least three simulations per class are required for splitting."
+        )
 
     validation = max(1, round(total * ratios.validation))
     test = max(1, round(total * ratios.test))

@@ -18,14 +18,10 @@ class Miner:
 
     def __post_init__(self) -> None:
         if not self.miner_id:
-            raise ValueError(
-                "Miner identifier must not be empty."
-            )
+            raise ValueError("Miner identifier must not be empty.")
 
         if not isfinite(self.hash_power) or self.hash_power <= 0.0:
-            raise ValueError(
-                "Miner hash power must be a finite positive value."
-            )
+            raise ValueError("Miner hash power must be a finite positive value.")
 
 
 class MiningPool:
@@ -37,36 +33,21 @@ class MiningPool:
         seed: int,
     ) -> None:
         if seed < 0:
-            raise ValueError(
-                "Mining-pool random seed must be non-negative."
-            )
+            raise ValueError("Mining-pool random seed must be non-negative.")
 
         if not miners:
-            raise ValueError(
-                "Mining pool must contain at least one miner."
-            )
+            raise ValueError("Mining pool must contain at least one miner.")
 
         miner_tuple = tuple(miners)
 
-        miner_ids = [
-            miner.miner_id
-            for miner in miner_tuple
-        ]
+        miner_ids = [miner.miner_id for miner in miner_tuple]
 
         if len(set(miner_ids)) != len(miner_ids):
-            raise ValueError(
-                "Mining pool miner identifiers must be unique."
-            )
+            raise ValueError("Mining pool miner identifiers must be unique.")
 
-        total_hash_power = sum(
-            miner.hash_power
-            for miner in miner_tuple
-        )
+        total_hash_power = sum(miner.hash_power for miner in miner_tuple)
 
-        if (
-            not isfinite(total_hash_power)
-            or total_hash_power <= 0.0
-        ):
+        if not isfinite(total_hash_power) or total_hash_power <= 0.0:
             raise ValueError(
                 "Total mining-pool hash power must be finite and positive."
             )
@@ -82,9 +63,7 @@ class MiningPool:
         self._seed = seed
         self._rng = Random(seed)
         self._total_hash_power = total_hash_power
-        self._cumulative_hash_power = tuple(
-            cumulative_hash_power
-        )
+        self._cumulative_hash_power = tuple(cumulative_hash_power)
 
     @property
     def miners(self) -> tuple[Miner, ...]:
@@ -108,19 +87,14 @@ class MiningPool:
         """Return each miner's normalized fraction of total hash power."""
 
         return {
-            miner.miner_id: (
-                miner.hash_power / self._total_hash_power
-            )
+            miner.miner_id: (miner.hash_power / self._total_hash_power)
             for miner in self._miners
         }
 
     def select_miner(self) -> Miner:
         """Select one miner proportionally to configured hash power."""
 
-        target = (
-            self._rng.random()
-            * self._total_hash_power
-        )
+        target = self._rng.random() * self._total_hash_power
 
         for miner, cumulative_power in zip(
             self._miners,
@@ -140,9 +114,7 @@ class MiningPool:
         """Create and finalize a block mined on the node's current tip."""
 
         if not isfinite(timestamp) or timestamp < 0.0:
-            raise ValueError(
-                "Block timestamp must be a finite non-negative value."
-            )
+            raise ValueError("Block timestamp must be a finite non-negative value.")
 
         miner = self.select_miner()
 

@@ -41,7 +41,12 @@ class ScenarioSpec:
             raise ValueError("Scenario identifiers must not be empty.")
         if self.seed < 0:
             raise ValueError("Scenario seed must be non-negative.")
-        if not 1 <= self.attack_start_step <= self.attack_end_step <= self.duration_blocks:
+        if (
+            not 1
+            <= self.attack_start_step
+            <= self.attack_end_step
+            <= self.duration_blocks
+        ):
             raise ValueError("Attack window must lie within the simulation.")
         if self.num_nodes <= 0 or self.num_miners <= 0:
             raise ValueError("Node and miner counts must be positive.")
@@ -133,9 +138,7 @@ class ScenarioGenerator:
             self._plan.miner_count.maximum,
         )
 
-        concentration_name, alpha = rng.choice(
-            self._plan.miner_concentration_alphas
-        )
+        concentration_name, alpha = rng.choice(self._plan.miner_concentration_alphas)
         miner_hash_powers = self._sample_miner_hash_powers(
             rng,
             num_miners,
@@ -190,7 +193,6 @@ class ScenarioGenerator:
                 self._plan.majority_q.maximum,
             ),
         )
-
 
     def _window_range(self, attack_type: AttackType):
         if attack_type is AttackType.NORMAL:

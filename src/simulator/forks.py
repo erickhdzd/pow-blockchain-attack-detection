@@ -126,8 +126,7 @@ class ForkManager:
     def __init__(self, parent_block: Block) -> None:
         if not parent_block.block_hash:
             raise ValueError(
-                "Fork parent block must be finalized before creating "
-                "a fork manager."
+                "Fork parent block must be finalized before creating a fork manager."
             )
 
         if not parent_block.is_hash_valid():
@@ -194,9 +193,6 @@ class ForkManager:
         if len(self._branches) < 2:
             return False
 
-        tip_hashes = {
-            branch.tip_hash
-            for branch in self._branches.values()
-        }
+        tip_hashes = {branch.tip_hash for branch in self._branches.values()}
 
         return len(tip_hashes) > 1

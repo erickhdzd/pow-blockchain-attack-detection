@@ -28,9 +28,7 @@ class ChainObservation:
             raise ValueError("Removed block count must be non-negative.")
 
         if self.common_ancestor_height < 0:
-            raise ValueError(
-                "Common ancestor height must be non-negative."
-            )
+            raise ValueError("Common ancestor height must be non-negative.")
 
         if self.common_ancestor_height > self.height:
             raise ValueError(
@@ -38,22 +36,13 @@ class ChainObservation:
             )
 
         if self.reorganization_depth < 0:
-            raise ValueError(
-                "Reorganization depth must be non-negative."
-            )
+            raise ValueError("Reorganization depth must be non-negative.")
 
         if self.reorganization_detected and self.reorganization_depth == 0:
-            raise ValueError(
-                "Detected reorganizations must have positive depth."
-            )
+            raise ValueError("Detected reorganizations must have positive depth.")
 
-        if (
-            not self.reorganization_detected
-            and self.reorganization_depth != 0
-        ):
-            raise ValueError(
-                "Non-reorganization observations must have zero depth."
-            )
+        if not self.reorganization_detected and self.reorganization_depth != 0:
+            raise ValueError("Non-reorganization observations must have zero depth.")
 
 
 class CanonicalChainObserver:
@@ -71,10 +60,7 @@ class CanonicalChainObserver:
     def observe(self, node: Node) -> ChainObservation:
         """Observe the node's canonical chain and describe changes since last call."""
 
-        current_hashes = tuple(
-            block.block_hash
-            for block in node.blockchain.chain
-        )
+        current_hashes = tuple(block.block_hash for block in node.blockchain.chain)
 
         if not current_hashes:
             raise RuntimeError("Canonical blockchain must not be empty.")
@@ -103,11 +89,7 @@ class CanonicalChainObserver:
         blocks_added = len(current_hashes) - common_prefix_length
 
         reorganization_detected = blocks_removed > 0
-        reorganization_depth = (
-            blocks_removed
-            if reorganization_detected
-            else 0
-        )
+        reorganization_depth = blocks_removed if reorganization_detected else 0
 
         tip_changed = previous_hashes[-1] != current_hashes[-1]
 

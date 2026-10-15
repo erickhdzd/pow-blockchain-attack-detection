@@ -1,4 +1,5 @@
 """Leakage-safe tabular and sequential dataset loading."""
+
 from __future__ import annotations
 
 from dataclasses import dataclass
@@ -29,7 +30,9 @@ class DatasetBundle:
     scaler: StandardScaler
 
 
-def _read_split(root: Path, split: str, x_prefix: str) -> tuple[pd.DataFrame, pd.Series, pd.DataFrame]:
+def _read_split(
+    root: Path, split: str, x_prefix: str
+) -> tuple[pd.DataFrame, pd.Series, pd.DataFrame]:
     x = pd.read_csv(root / "splits" / f"{x_prefix}_{split}.csv")
     y = pd.read_csv(root / "splits" / f"y_{split}.csv")["attack_label"]
     metadata = pd.read_csv(root / "splits" / f"metadata_{split}.csv")
@@ -106,11 +109,7 @@ def load_external_split(
     x, y, metadata = _read_split(root, split, x_prefix)
 
     if drop_features:
-        missing = [
-            feature
-            for feature in drop_features
-            if feature not in x.columns
-        ]
+        missing = [feature for feature in drop_features if feature not in x.columns]
         if missing:
             raise ValueError(
                 f"Cannot drop missing external features: {sorted(set(missing))}."
@@ -119,9 +118,7 @@ def load_external_split(
 
     feature_names = tuple(x.columns)
     if feature_names != expected_features:
-        raise ValueError(
-            "External feature schema differs from the ID training schema."
-        )
+        raise ValueError("External feature schema differs from the ID training schema.")
 
     transformed = scaler.transform(x.to_numpy(dtype=np.float32))
 
@@ -156,19 +153,17 @@ def load_external_dataset(
     ]
 
     simulation_sets = [
-        set(split.metadata["simulation_id"].astype(str))
-        for split in splits
+        set(split.metadata["simulation_id"].astype(str)) for split in splits
     ]
 
     overlaps: set[str] = set()
     for index, left in enumerate(simulation_sets):
-        for right in simulation_sets[index + 1:]:
+        for right in simulation_sets[index + 1 :]:
             overlaps.update(left & right)
 
     if overlaps:
         raise ValueError(
-            "External simulation IDs overlap across splits: "
-            f"{sorted(overlaps)}."
+            f"External simulation IDs overlap across splits: {sorted(overlaps)}."
         )
 
     metadata = pd.concat(
@@ -216,7 +211,9 @@ class AlignedDatasetViews:
     test: AlignedSplitViews
 
 
-def _sequence_index_windows(data: SplitData, length: int, stride: int) -> list[list[int]]:
+def _sequence_index_windows(
+    data: SplitData, length: int, stride: int
+) -> list[list[int]]:
     if length <= 0 or stride <= 0:
         raise ValueError("Sequence length and stride must be positive.")
     windows: list[list[int]] = []
@@ -235,15 +232,15 @@ def _sequence_index_windows(data: SplitData, length: int, stride: int) -> list[l
     return windows
 
 
-def make_aligned_split_views(data: SplitData, length: int, stride: int) -> AlignedSplitViews:
+def make_aligned_split_views(
+    data: SplitData, length: int, stride: int
+) -> AlignedSplitViews:
     """Build tabular endpoints and temporal windows from identical sample endpoints."""
 
     index_windows = _sequence_index_windows(data, length, stride)
     endpoint_indices: list[int] = [window[-1] for window in index_windows]
     endpoint_metadata: pd.DataFrame = (
-        data.metadata.iloc[endpoint_indices, :]
-        .copy()
-        .reset_index(drop=True)
+        data.metadata.iloc[endpoint_indices, :].copy().reset_index(drop=True)
     )
     endpoint_labels = np.take(
         data.y,

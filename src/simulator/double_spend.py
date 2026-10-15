@@ -1,8 +1,10 @@
 from __future__ import annotations
 
+from collections.abc import Buffer
 from dataclasses import dataclass
 from hashlib import sha256
 from math import isfinite
+from typing import cast
 
 from src.simulator.attacks import DoubleSpendParameters
 from src.simulator.blockchain import Block, Transaction
@@ -23,19 +25,13 @@ class DoubleSpendTransactionPair:
         conflicting_output = self.conflicting_transaction.spent_output_id
 
         if payment_output is None:
-            raise ValueError(
-                "Payment transaction must reference a spent output."
-            )
+            raise ValueError("Payment transaction must reference a spent output.")
 
         if conflicting_output is None:
-            raise ValueError(
-                "Conflicting transaction must reference a spent output."
-            )
+            raise ValueError("Conflicting transaction must reference a spent output.")
 
         if payment_output != conflicting_output:
-            raise ValueError(
-                "Double-spend transactions must spend the same output."
-            )
+            raise ValueError("Double-spend transactions must spend the same output.")
 
         if self.payment_transaction.tx_id == self.conflicting_transaction.tx_id:
             raise ValueError(
@@ -114,12 +110,12 @@ class DoubleSpendAttack:
         return self._transactions
 
     def start(
-            self,
-            sender: str,
-            victim_receiver: str,
-            attacker_receiver: str,
-            spent_output_id: str,
-            timestamp: float,
+        self,
+        sender: str,
+        victim_receiver: str,
+        attacker_receiver: str,
+        spent_output_id: str,
+        timestamp: float,
     ) -> DoubleSpendTransactionPair:
         """Initialize conflicting transactions and the private attack branch."""
 
@@ -130,14 +126,10 @@ class DoubleSpendAttack:
             raise ValueError("Double-spend transaction sender must not be empty.")
 
         if not victim_receiver:
-            raise ValueError(
-                "Double-spend victim receiver must not be empty."
-            )
+            raise ValueError("Double-spend victim receiver must not be empty.")
 
         if not attacker_receiver:
-            raise ValueError(
-                "Double-spend attacker receiver must not be empty."
-            )
+            raise ValueError("Double-spend attacker receiver must not be empty.")
 
         if not spent_output_id:
             raise ValueError("Spent output ID must not be empty.")
@@ -216,8 +208,7 @@ class DoubleSpendAttack:
         payment_tx_id = self.transactions.payment_transaction.tx_id
 
         if not any(
-            transaction.tx_id == payment_tx_id
-            for transaction in block.transactions
+            transaction.tx_id == payment_tx_id for transaction in block.transactions
         ):
             raise ValueError(
                 "Registered payment block does not contain the payment transaction."
@@ -231,10 +222,13 @@ class DoubleSpendAttack:
         if not self.started:
             raise RuntimeError("Double-spend attack has not been started.")
 
-        if not any(
-            transaction.tx_id == self.transactions.conflicting_transaction.tx_id
-            for transaction in block.transactions
-        ) and self.private_branch.length == 0:
+        if (
+            not any(
+                transaction.tx_id == self.transactions.conflicting_transaction.tx_id
+                for transaction in block.transactions
+            )
+            and self.private_branch.length == 0
+        ):
             raise ValueError(
                 "The first private block must contain the conflicting transaction."
             )
@@ -250,9 +244,7 @@ class DoubleSpendAttack:
         if self._payment_block_height > self._victim_node.height:
             return 0
 
-        payment_block = self._victim_node.blockchain.chain[
-            self._payment_block_height
-        ]
+        payment_block = self._victim_node.blockchain.chain[self._payment_block_height]
 
         payment_tx_id = self.transactions.payment_transaction.tx_id
 
@@ -321,12 +313,6 @@ class DoubleSpendAttack:
     ) -> str:
         """Create a deterministic transaction identifier."""
 
-        payload = (
-            f"{role}|"
-            f"{sender}|"
-            f"{receiver}|"
-            f"{spent_output_id}|"
-            f"{timestamp:.9f}"
-        )
+        payload = f"{role}|{sender}|{receiver}|{spent_output_id}|{timestamp:.9f}"
 
-        return sha256(payload.encode("utf-8")).hexdigest()
+        return sha256(cast(Buffer, payload.encode("utf-8"))).hexdigest()

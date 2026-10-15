@@ -1,4 +1,5 @@
 """Verify runtime dependencies and the generated dataset before training."""
+
 from __future__ import annotations
 
 import json
@@ -36,7 +37,9 @@ def main() -> None:
         "pyyaml": yaml.__version__,
         "cuda_available": torch.cuda.is_available(),
         "cuda_version": torch.version.cuda,
-        "device_name": torch.cuda.get_device_name(0) if torch.cuda.is_available() else "CPU",
+        "device_name": torch.cuda.get_device_name(0)
+        if torch.cuda.is_available()
+        else "CPU",
         "dataset": "ready",
     }
     print(json.dumps(payload, indent=2, sort_keys=True))

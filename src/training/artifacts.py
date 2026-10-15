@@ -1,4 +1,5 @@
 """Canonical result serialization and paper-ready figures."""
+
 from __future__ import annotations
 
 import csv
@@ -37,7 +38,9 @@ def save_confusion_matrix(matrix: np.ndarray, path: Path, title: str) -> None:
     axis.set_yticks(range(4))
     for row in range(4):
         for column in range(4):
-            axis.text(column, row, str(int(matrix[row, column])), ha="center", va="center")
+            axis.text(
+                column, row, str(int(matrix[row, column])), ha="center", va="center"
+            )
     fig.tight_layout()
     fig.savefig(path, dpi=300, bbox_inches="tight")
     plt.close(fig)
@@ -70,9 +73,7 @@ def aggregate_runs(summary_path: Path, output_path: Path) -> pd.DataFrame:
     }
     aggregated = frame.groupby(["task", "model"], as_index=True).agg(aggregations)
     aggregated.columns = [
-        "_".join(map(str, column))
-        if isinstance(column, tuple)
-        else str(column)
+        "_".join(map(str, column)) if isinstance(column, tuple) else str(column)
         for column in aggregated.columns
     ]
     aggregated = aggregated.reset_index()
@@ -93,9 +94,6 @@ def sha256_file(path: Path) -> str:
 def write_manifest(path: Path, payload: dict[str, Any]) -> None:
     """Write deterministic JSON metadata."""
 
-    path.write_text(json.dumps(payload, indent=2, sort_keys=True) + "\n", encoding="utf-8")
-
-
-
-
-
+    path.write_text(
+        json.dumps(payload, indent=2, sort_keys=True) + "\n", encoding="utf-8"
+    )

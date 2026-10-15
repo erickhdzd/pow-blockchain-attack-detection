@@ -117,9 +117,8 @@ class MajorityAttack:
             self.attacker_branch.add_block(block)
             self._attacker_blocks_mined += 1
             self._update_state()
-            if (
-                self.attacker_lead >= 2
-                or (self._public_blocks_in_cycle > 0 and self.attacker_lead > 0)
+            if self.attacker_lead >= 2 or (
+                self._public_blocks_in_cycle > 0 and self.attacker_lead > 0
             ):
                 self._publish_if_longer()
             return block
@@ -159,7 +158,9 @@ class MajorityAttack:
             state=self._state,
             attacker_height=attacker_height,
             public_height=self._victim_node.height,
-            attacker_lead=attacker_height - self._victim_node.height if self.started else 0,
+            attacker_lead=attacker_height - self._victim_node.height
+            if self.started
+            else 0,
             attacker_blocks_mined=self._attacker_blocks_mined,
             honest_blocks_mined=self._honest_blocks_mined,
             blocks_published=self._blocks_published,

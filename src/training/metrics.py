@@ -1,4 +1,5 @@
 """Multiclass metrics and detection-delay evaluation."""
+
 from __future__ import annotations
 
 from dataclasses import dataclass
@@ -15,7 +16,6 @@ from sklearn.metrics import (
 )
 from sklearn.preprocessing import label_binarize
 
-
 CLASS_NAMES = ("normal", "double_spend", "selfish_mining", "majority_attack")
 ATTACK_NAME_TO_ID = {name.upper(): index for index, name in enumerate(CLASS_NAMES)}
 
@@ -29,7 +29,9 @@ class MetricResult:
     confusion: np.ndarray
 
 
-def evaluate_multiclass(y_true: np.ndarray, y_pred: np.ndarray, probabilities: np.ndarray) -> MetricResult:
+def evaluate_multiclass(
+    y_true: np.ndarray, y_pred: np.ndarray, probabilities: np.ndarray
+) -> MetricResult:
     """Compute stable four-class metrics from predictions and probabilities."""
 
     labels = np.arange(4)
@@ -51,7 +53,9 @@ def evaluate_multiclass(y_true: np.ndarray, y_pred: np.ndarray, probabilities: n
         "macro_recall": float(np.mean(recall)),
         "macro_f1": float(np.mean(f1)),
         "mcc": float(matthews_corrcoef(y_true, y_pred)),
-        "macro_roc_auc": float(roc_auc_score(y_bin, probabilities, average="macro", multi_class="ovr")),
+        "macro_roc_auc": float(
+            roc_auc_score(y_bin, probabilities, average="macro", multi_class="ovr")
+        ),
         "macro_pr_auc": float(_macro_pr_auc(y_bin, probabilities)),
     }
     rows = []
@@ -69,7 +73,9 @@ def evaluate_multiclass(y_true: np.ndarray, y_pred: np.ndarray, probabilities: n
                 "recall": float(recall[label]),
                 "f1": float(f1[label]),
                 "support": int(support[label]),
-                "false_positive_rate": float(false_positive / denominator) if denominator else 0.0,
+                "false_positive_rate": float(false_positive / denominator)
+                if denominator
+                else 0.0,
                 "detection_rate": float(recall[label]),
             }
         )
@@ -86,7 +92,9 @@ def _macro_pr_auc(y_bin: np.ndarray, probabilities: np.ndarray) -> float:
     return float(average_precision_score(y_bin, probabilities, average="macro"))
 
 
-def detection_delay_blocks(metadata: pd.DataFrame, y_pred: np.ndarray) -> dict[str, float]:
+def detection_delay_blocks(
+    metadata: pd.DataFrame, y_pred: np.ndarray
+) -> dict[str, float]:
     """Measure first correct attack detection after configured attack onset."""
 
     frame = metadata.copy()
@@ -110,8 +118,12 @@ def detection_delay_blocks(metadata: pd.DataFrame, y_pred: np.ndarray) -> dict[s
         "attack_scenarios": float(eligible),
         "detected_attack_scenarios": float(detected),
         "scenario_detection_rate": float(detected / eligible) if eligible else 0.0,
-        "mean_detection_delay_blocks": float(np.mean(delays)) if delays else float("nan"),
-        "median_detection_delay_blocks": float(np.median(delays)) if delays else float("nan"),
+        "mean_detection_delay_blocks": float(np.mean(delays))
+        if delays
+        else float("nan"),
+        "median_detection_delay_blocks": float(np.median(delays))
+        if delays
+        else float("nan"),
     }
 
 
@@ -136,5 +148,3 @@ def _attack_type_id(value: object) -> int:
             return int(numeric_value)
 
     raise ValueError("Unknown attack type metadata value.")
-
-

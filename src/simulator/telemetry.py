@@ -3,6 +3,7 @@ from __future__ import annotations
 from collections import Counter
 from collections.abc import Sequence
 from dataclasses import dataclass
+from itertools import pairwise
 from math import isfinite
 from statistics import fmean, pstdev
 
@@ -32,14 +33,10 @@ class TelemetrySnapshot:
 
     def __post_init__(self) -> None:
         if not isfinite(self.timestamp) or self.timestamp < 0.0:
-            raise ValueError(
-                "Telemetry timestamp must be a finite non-negative value."
-            )
+            raise ValueError("Telemetry timestamp must be a finite non-negative value.")
 
         if not isfinite(self.mean_height) or self.mean_height < 0.0:
-            raise ValueError(
-                "Mean height must be a finite non-negative value."
-            )
+            raise ValueError("Mean height must be a finite non-negative value.")
 
         if self.min_height < 0:
             raise ValueError("Minimum height must be non-negative.")
@@ -48,31 +45,21 @@ class TelemetrySnapshot:
             raise ValueError("Maximum height must be non-negative.")
 
         if self.min_height > self.max_height:
-            raise ValueError(
-                "Minimum height must not exceed maximum height."
-            )
+            raise ValueError("Minimum height must not exceed maximum height.")
 
         if not isfinite(self.height_std) or self.height_std < 0.0:
             raise ValueError(
-                "Height standard deviation must be a finite "
-                "non-negative value."
+                "Height standard deviation must be a finite non-negative value."
             )
 
         if self.unique_tip_count <= 0:
             raise ValueError("Unique tip count must be positive.")
 
-        if (
-            not isfinite(self.consensus_ratio)
-            or not 0.0 <= self.consensus_ratio <= 1.0
-        ):
-            raise ValueError(
-                "Consensus ratio must be a finite value in [0, 1]."
-            )
+        if not isfinite(self.consensus_ratio) or not 0.0 <= self.consensus_ratio <= 1.0:
+            raise ValueError("Consensus ratio must be a finite value in [0, 1].")
 
         if self.reference_height < 0:
-            raise ValueError(
-                "Reference height must be non-negative."
-            )
+            raise ValueError("Reference height must be non-negative.")
 
         if not self.min_height <= self.reference_height <= self.max_height:
             raise ValueError(
@@ -97,9 +84,7 @@ class TelemetrySnapshot:
         )
 
         if self.unique_miner_count < 0:
-            raise ValueError(
-                "Unique miner count must be non-negative."
-            )
+            raise ValueError("Unique miner count must be non-negative.")
 
         self._validate_probability(
             self.dominant_miner_ratio,
@@ -118,18 +103,13 @@ class TelemetrySnapshot:
 
             if self.dominant_miner_ratio != 0.0:
                 raise ValueError(
-                    "Genesis-only telemetry must have zero dominant "
-                    "miner ratio."
+                    "Genesis-only telemetry must have zero dominant miner ratio."
                 )
 
             if self.miner_hhi != 0.0:
-                raise ValueError(
-                    "Genesis-only telemetry must have zero miner HHI."
-                )
+                raise ValueError("Genesis-only telemetry must have zero miner HHI.")
         elif self.unique_miner_count == 0:
-            raise ValueError(
-                "Non-genesis telemetry must contain at least one miner."
-            )
+            raise ValueError("Non-genesis telemetry must contain at least one miner.")
 
     @staticmethod
     def _validate_non_negative_finite(
@@ -137,9 +117,7 @@ class TelemetrySnapshot:
         field_name: str,
     ) -> None:
         if not isfinite(value) or value < 0.0:
-            raise ValueError(
-                f"{field_name} must be a finite non-negative value."
-            )
+            raise ValueError(f"{field_name} must be a finite non-negative value.")
 
     @staticmethod
     def _validate_probability(
@@ -147,9 +125,7 @@ class TelemetrySnapshot:
         field_name: str,
     ) -> None:
         if not isfinite(value) or not 0.0 <= value <= 1.0:
-            raise ValueError(
-                f"{field_name} must be a finite value in [0, 1]."
-            )
+            raise ValueError(f"{field_name} must be a finite value in [0, 1].")
 
 
 class TelemetryCollector:
@@ -164,41 +140,25 @@ class TelemetryCollector:
         """Collect one deterministic telemetry snapshot."""
 
         if not isfinite(timestamp) or timestamp < 0.0:
-            raise ValueError(
-                "Telemetry timestamp must be a finite non-negative value."
-            )
+            raise ValueError("Telemetry timestamp must be a finite non-negative value.")
 
         if miner_window_blocks <= 0:
-            raise ValueError(
-                "Miner observation window must be positive."
-            )
+            raise ValueError("Miner observation window must be positive.")
 
         nodes = network.nodes
 
         if not nodes:
-            raise ValueError(
-                "Telemetry collection requires at least one network node."
-            )
+            raise ValueError("Telemetry collection requires at least one network node.")
 
-        heights = [
-            node.height
-            for node in nodes
-        ]
+        heights = [node.height for node in nodes]
 
-        tip_hashes = [
-            node.tip_hash
-            for node in nodes
-        ]
+        tip_hashes = [node.tip_hash for node in nodes]
 
         mean_height = float(fmean(heights))
         min_height = min(heights)
         max_height = max(heights)
 
-        height_std = (
-            float(pstdev(heights))
-            if len(heights) > 1
-            else 0.0
-        )
+        height_std = float(pstdev(heights)) if len(heights) > 1 else 0.0
 
         tip_counts = Counter(tip_hashes)
         unique_tip_count = len(tip_counts)
@@ -237,15 +197,9 @@ class TelemetryCollector:
             consensus_ratio=consensus_ratio,
             reference_height=reference_node.height,
             tip_age_seconds=tip_age_seconds,
-            latest_block_interval_seconds=(
-                latest_block_interval_seconds
-            ),
-            mean_recent_block_interval_seconds=(
-                mean_recent_block_interval_seconds
-            ),
-            std_recent_block_interval_seconds=(
-                std_recent_block_interval_seconds
-            ),
+            latest_block_interval_seconds=latest_block_interval_seconds,
+            mean_recent_block_interval_seconds=mean_recent_block_interval_seconds,
+            std_recent_block_interval_seconds=std_recent_block_interval_seconds,
             unique_miner_count=unique_miner_count,
             dominant_miner_ratio=dominant_miner_ratio,
             miner_hhi=miner_hhi,
@@ -253,16 +207,14 @@ class TelemetryCollector:
 
     @staticmethod
     def _block_time_statistics(
-            chain: Sequence[Block],
-            observation_timestamp: float,
-            window_blocks: int,
+        chain: Sequence[Block],
+        observation_timestamp: float,
+        window_blocks: int,
     ) -> tuple[float, float, float, float]:
         """Calculate observable timing statistics from the canonical chain."""
 
         if not chain:
-            raise RuntimeError(
-                "Canonical blockchain must contain a genesis block."
-            )
+            raise RuntimeError("Canonical blockchain must contain a genesis block.")
 
         tip_timestamp = chain[-1].timestamp
 
@@ -281,32 +233,23 @@ class TelemetryCollector:
                 0.0,
             )
 
-        recent_blocks = chain[-(window_blocks + 1):]
+        recent_blocks = chain[-(window_blocks + 1) :]
 
         intervals: list[float] = []
 
-        for previous, current in zip(
-            recent_blocks,
-            recent_blocks[1:],
-            strict=False,
-        ):
+        for previous, current in pairwise(recent_blocks):
             interval = current.timestamp - previous.timestamp
 
             if not isfinite(interval) or interval < 0.0:
                 raise ValueError(
-                    "Canonical block timestamps must be finite and "
-                    "non-decreasing."
+                    "Canonical block timestamps must be finite and non-decreasing."
                 )
 
             intervals.append(interval)
 
         latest_interval = intervals[-1]
         mean_interval = float(fmean(intervals))
-        interval_std = (
-            float(pstdev(intervals))
-            if len(intervals) > 1
-            else 0.0
-        )
+        interval_std = float(pstdev(intervals)) if len(intervals) > 1 else 0.0
 
         return (
             tip_age_seconds,
@@ -317,8 +260,8 @@ class TelemetryCollector:
 
     @staticmethod
     def _miner_statistics(
-            chain: Sequence[Block],
-            window_blocks: int,
+        chain: Sequence[Block],
+        window_blocks: int,
     ) -> tuple[int, float, float]:
         """Calculate recent public miner-concentration statistics."""
 
@@ -327,10 +270,7 @@ class TelemetryCollector:
 
         recent_blocks = chain[1:][-window_blocks:]
 
-        miner_counts = Counter(
-            block.miner_id
-            for block in recent_blocks
-        )
+        miner_counts = Counter(block.miner_id for block in recent_blocks)
 
         total_blocks = len(recent_blocks)
 
@@ -338,14 +278,9 @@ class TelemetryCollector:
             return 0, 0.0, 0.0
 
         unique_miner_count = len(miner_counts)
-        dominant_miner_ratio = (
-            max(miner_counts.values()) / total_blocks
-        )
+        dominant_miner_ratio = max(miner_counts.values()) / total_blocks
 
-        miner_hhi = sum(
-            (count / total_blocks) ** 2
-            for count in miner_counts.values()
-        )
+        miner_hhi = sum((count / total_blocks) ** 2 for count in miner_counts.values())
 
         return (
             unique_miner_count,

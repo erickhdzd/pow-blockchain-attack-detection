@@ -1,8 +1,10 @@
 from __future__ import annotations
 
+from collections.abc import Buffer
 from dataclasses import dataclass, field
 from hashlib import sha256
 from math import isfinite
+from typing import cast
 
 
 @dataclass(slots=True, frozen=True)
@@ -79,7 +81,7 @@ class Block:
             f"{transaction_ids}"
         )
 
-        return sha256(payload.encode("utf-8")).hexdigest()
+        return sha256(cast(Buffer, payload.encode("utf-8"))).hexdigest()
 
     def finalize(self) -> None:
         """Compute and store the current block hash."""

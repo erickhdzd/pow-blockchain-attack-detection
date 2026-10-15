@@ -1,4 +1,5 @@
 """Command-line training entry point for all paper experiments."""
+
 from __future__ import annotations
 
 import argparse
@@ -34,7 +35,11 @@ from src.training.data import (
     make_aligned_dataset_views,
     make_aligned_split_views,
 )
-from src.training.metrics import MetricResult, detection_delay_blocks, evaluate_multiclass
+from src.training.metrics import (
+    MetricResult,
+    detection_delay_blocks,
+    evaluate_multiclass,
+)
 from src.training.models import build_neural_model, parameter_count
 from src.training.neural import fit_neural, predict_neural, resolve_device
 from src.training.reproducibility import seed_everything
@@ -74,13 +79,19 @@ def _run_classical(
     started = time.perf_counter()
     if model_name == "xgboost":
         sample_weight = compute_sample_weight("balanced", views.train.endpoints.y)
-        model.fit(views.train.endpoints.x, views.train.endpoints.y, sample_weight=sample_weight)
+        model.fit(
+            views.train.endpoints.x,
+            views.train.endpoints.y,
+            sample_weight=sample_weight,
+        )
     else:
         model.fit(views.train.endpoints.x, views.train.endpoints.y)
     training_seconds = time.perf_counter() - started
     started = time.perf_counter()
     probabilities = predict_probabilities(model, views.test.endpoints.x)
-    inference_ms = (time.perf_counter() - started) * 1000.0 / len(views.test.endpoints.y)
+    inference_ms = (
+        (time.perf_counter() - started) * 1000.0 / len(views.test.endpoints.y)
+    )
     predictions = probabilities.argmax(axis=1)
     metrics = evaluate_multiclass(views.test.endpoints.y, predictions, probabilities)
     delay = detection_delay_blocks(views.test.endpoints.metadata, predictions)
@@ -120,12 +131,18 @@ def _run_neural(
     is_mlp = model_name == "mlp"
     if is_mlp:
         train_x, train_y = views.train.endpoints.x, views.train.endpoints.y
-        validation_x, validation_y = views.validation.endpoints.x, views.validation.endpoints.y
+        validation_x, validation_y = (
+            views.validation.endpoints.x,
+            views.validation.endpoints.y,
+        )
         test_x, test_y = views.test.endpoints.x, views.test.endpoints.y
         test_metadata = views.test.endpoints.metadata
     else:
         train_x, train_y = views.train.sequences.x, views.train.sequences.y
-        validation_x, validation_y = views.validation.sequences.x, views.validation.sequences.y
+        validation_x, validation_y = (
+            views.validation.sequences.x,
+            views.validation.sequences.y,
+        )
         test_x, test_y = views.test.sequences.x, views.test.sequences.y
         test_metadata = views.test.sequences.metadata
     device = resolve_device(config.device)
@@ -166,9 +183,9 @@ def _run_neural(
         prediction_directory = Path(config.results_root) / "predictions"
         prediction_directory.mkdir(parents=True, exist_ok=True)
 
-        prediction_frame = test_metadata[
-            ["simulation_id", "step"]
-        ].reset_index(drop=True).copy()
+        prediction_frame = (
+            test_metadata[["simulation_id", "step"]].reset_index(drop=True).copy()
+        )
         prediction_frame["y_true"] = test_y
         prediction_frame["y_pred"] = predictions
 
@@ -176,8 +193,7 @@ def _run_neural(
             prediction_frame[f"prob_{class_id}"] = probabilities[:, class_id]
 
         prediction_frame.to_csv(
-            prediction_directory
-            / f"{task}__{model_name}__seed_{seed}.csv",
+            prediction_directory / f"{task}__{model_name}__seed_{seed}.csv",
             index=False,
         )
 
@@ -269,7 +285,6 @@ def _evaluate_neural_ood(
     return summary, metrics
 
 
-
 def _load_ood_views(
     config: TrainingConfig,
     dataset_root: str | Path,
@@ -339,8 +354,7 @@ def run_experiments(
     ood_per_class_rows: list[dict[str, Any]] = []
     for task, task_settings in tasks.items():
         drop_features = tuple(
-            str(feature)
-            for feature in task_settings.get("drop_features", ())
+            str(feature) for feature in task_settings.get("drop_features", ())
         )
         bundle = load_dataset_bundle(
             config.dataset_root,
@@ -389,7 +403,9 @@ def run_experiments(
                     seed,
                     directories,
                 )
-                _record_run(summary, metrics, summaries, per_class_rows, confusion_totals)
+                _record_run(
+                    summary, metrics, summaries, per_class_rows, confusion_totals
+                )
         for name, settings in config.neural_models.items():
             if not bool(settings.get("enabled", True)):
                 continue
@@ -417,13 +433,8 @@ def run_experiments(
                 )
                 for ood_summary, ood_metrics in ood_outputs:
                     ood_summaries.append(ood_summary)
-                    for raw_row in ood_metrics.per_class.to_dict(
-                        orient="records"
-                    ):
-                        row = {
-                            str(key): value
-                            for key, value in raw_row.items()
-                        }
+                    for raw_row in ood_metrics.per_class.to_dict(orient="records"):
+                        row = {str(key): value for key, value in raw_row.items()}
                         ood_per_class_rows.append(
                             {
                                 "domain": ood_summary["domain"],

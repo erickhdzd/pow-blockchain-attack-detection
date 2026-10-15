@@ -1,4 +1,5 @@
 """Deterministic PyTorch training loops with early stopping."""
+
 from __future__ import annotations
 
 import copy
@@ -32,7 +33,14 @@ def resolve_device(requested: str) -> torch.device:
     return torch.device(requested)
 
 
-def _loader(x: np.ndarray, y: np.ndarray, batch_size: int, shuffle: bool, seed: int, workers: int) -> DataLoader:
+def _loader(
+    x: np.ndarray,
+    y: np.ndarray,
+    batch_size: int,
+    shuffle: bool,
+    seed: int,
+    workers: int,
+) -> DataLoader:
     generator = torch.Generator().manual_seed(seed)
     dataset = TensorDataset(
         torch.tensor(x, dtype=torch.float32),
@@ -73,14 +81,18 @@ def fit_neural(
     counts = np.bincount(train_y, minlength=4).astype(np.float64)
     weights = counts.sum() / np.maximum(counts, 1.0)
     weights = weights / weights.mean()
-    criterion = nn.CrossEntropyLoss(weight=torch.tensor(weights, dtype=torch.float32, device=device))
+    criterion = nn.CrossEntropyLoss(
+        weight=torch.tensor(weights, dtype=torch.float32, device=device)
+    )
     optimizer = torch.optim.AdamW(
         model.parameters(),
         lr=learning_rate,
         weight_decay=weight_decay,
     )
     train_loader = _loader(train_x, train_y, batch_size, True, seed, num_workers)
-    validation_loader = _loader(validation_x, validation_y, batch_size, False, seed, num_workers)
+    validation_loader = _loader(
+        validation_x, validation_y, batch_size, False, seed, num_workers
+    )
     best_loss = float("inf")
     best_epoch = 0
     best_state = copy.deepcopy(model.state_dict())
@@ -119,7 +131,9 @@ def fit_neural(
     return NeuralFitResult(best_state, best_epoch, best_loss, seconds, float(peak))
 
 
-def _mean_loss(model: nn.Module, loader: DataLoader, criterion: nn.Module, device: torch.device) -> float:
+def _mean_loss(
+    model: nn.Module, loader: DataLoader, criterion: nn.Module, device: torch.device
+) -> float:
     model.eval()
     total = 0.0
     count = 0

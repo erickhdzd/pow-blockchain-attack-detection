@@ -16,8 +16,10 @@ from src.analysis.generate_paper_assets import (
 
 
 def _load_results(project_root: Path) -> tuple[pd.DataFrame, pd.DataFrame]:
-    run = pd.read_csv(project_root / "results" / "metrics" / "run_metrics.csv")
-    per_class = pd.read_csv(project_root / "results" / "metrics" / "per_class_metrics.csv")
+    run = pd.read_csv(str(project_root / "results" / "metrics" / "run_metrics.csv"))
+    per_class = pd.read_csv(
+        str(project_root / "results" / "metrics" / "per_class_metrics.csv")
+    )
     return run, per_class
 
 
@@ -33,7 +35,10 @@ def test_all_runs_share_one_evaluation_hash(project_root: Path = Path(".")) -> N
     run, per_class = _load_results(project_root)
     audit = validate_inputs(run, per_class)
     assert len(run["evaluation_sample_id_sha256"].unique()) == 1
-    assert audit["evaluation_sample_id_sha256"] == run["evaluation_sample_id_sha256"].iloc[0]
+    assert (
+        audit["evaluation_sample_id_sha256"]
+        == run["evaluation_sample_id_sha256"].iloc[0]
+    )
 
 
 def test_aligned_split_sizes_are_constant(project_root: Path = Path(".")) -> None:
@@ -56,15 +61,22 @@ def test_macro_f1_winners_match_frozen_results(project_root: Path = Path(".")) -
     assert winners == {"general": "gru", "early": "cnn_lstm"}
 
 
-def test_top_class_table_has_four_classes_per_task(project_root: Path = Path(".")) -> None:
+def test_top_class_table_has_four_classes_per_task(
+    project_root: Path = Path("."),
+) -> None:
     run, per_class = _load_results(project_root)
     winners = top_models(run)
     table = build_top_class_table(per_class, winners)
     assert len(table) == 8
-    assert table.groupby("task")["class_id"].nunique().to_dict() == {"early": 4, "general": 4}
+    assert table.groupby("task")["class_id"].nunique().to_dict() == {
+        "early": 4,
+        "general": 4,
+    }
 
 
-def test_general_vs_early_table_is_model_complete(project_root: Path = Path(".")) -> None:
+def test_general_vs_early_table_is_model_complete(
+    project_root: Path = Path("."),
+) -> None:
     run, _ = _load_results(project_root)
     table = build_general_vs_early(run)
     assert set(table["model"]) == set(EXPECTED_MODELS)

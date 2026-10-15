@@ -1,3 +1,4 @@
+# ruff: noqa: SIM115
 """Reproducible construction of raw and leakage-safe ML datasets."""
 
 from __future__ import annotations
@@ -5,10 +6,11 @@ from __future__ import annotations
 import csv
 import hashlib
 import json
+from collections.abc import Buffer
 from contextlib import ExitStack
 from dataclasses import asdict, dataclass
 from pathlib import Path
-from typing import Any
+from typing import Any, cast
 
 from src.dataset.config import ExperimentPlan
 from src.dataset.scenario import ScenarioGenerator, ScenarioSpec
@@ -74,7 +76,9 @@ class DatasetBuilder:
         sample_count = 0
 
         with ExitStack() as stack:
-            raw_handle = stack.enter_context(raw_path.open("w", encoding="utf-8", newline=""))
+            raw_handle = stack.enter_context(
+                raw_path.open("w", encoding="utf-8", newline="")
+            )
             raw_columns = (*METADATA_COLUMNS, *OBSERVABLE_COLUMNS, *TARGET_COLUMNS)
             raw_writer = csv.DictWriter(raw_handle, fieldnames=raw_columns)
             raw_writer.writeheader()
@@ -106,7 +110,10 @@ class DatasetBuilder:
                     raw_writer.writerow(raw_row)
 
                     writers[split]["x"].writerow(
-                        {column: feature_dict[column] for column in MODEL_FEATURE_COLUMNS}
+                        {
+                            column: feature_dict[column]
+                            for column in MODEL_FEATURE_COLUMNS
+                        }
                     )
                     writers[split]["x_early"].writerow(
                         {
@@ -236,13 +243,19 @@ class DatasetBuilder:
             return False
         if attack_type is AttackType.DOUBLE_SPEND:
             double_spend_status = engine.double_spend_status
-            return double_spend_status is not None and bool(double_spend_status.successful)
+            return double_spend_status is not None and bool(
+                double_spend_status.successful
+            )
         if attack_type is AttackType.SELFISH_MINING:
             selfish_mining_status = engine.selfish_mining_status
-            return selfish_mining_status is not None and bool(selfish_mining_status.successful)
+            return selfish_mining_status is not None and bool(
+                selfish_mining_status.successful
+            )
         if attack_type is AttackType.MAJORITY_ATTACK:
             majority_attack_status = engine.majority_attack_status
-            return majority_attack_status is not None and bool(majority_attack_status.successful)
+            return majority_attack_status is not None and bool(
+                majority_attack_status.successful
+            )
         raise ValueError(f"Unsupported attack type: {attack_type!r}.")
 
     @staticmethod
@@ -279,7 +292,9 @@ class DatasetBuilder:
             "attack_start_step": scenario.attack_start_step,
             "attack_end_step": scenario.attack_end_step,
             "attacker_hash_share": (
-                "" if scenario.attacker_hash_share is None else scenario.attacker_hash_share
+                ""
+                if scenario.attacker_hash_share is None
+                else scenario.attacker_hash_share
             ),
             "gamma": (
                 scenario.gamma
@@ -349,13 +364,10 @@ class DatasetBuilder:
         split_sample_counts: dict[str, int],
     ) -> None:
         files = sorted(
-            path
-            for path in root.rglob("*")
-            if path.is_file() and path != manifest_path
+            path for path in root.rglob("*") if path.is_file() and path != manifest_path
         )
         hashes = {
-            str(path.relative_to(root)): DatasetBuilder._sha256(path)
-            for path in files
+            str(path.relative_to(root)): DatasetBuilder._sha256(path) for path in files
         }
         payload = {
             "scenario_count": scenario_count,
@@ -373,6 +385,5 @@ class DatasetBuilder:
         digest = hashlib.sha256()
         with path.open("rb") as handle:
             for chunk in iter(lambda: handle.read(1024 * 1024), b""):
-                digest.update(chunk)
+                digest.update(cast(Buffer, chunk))
         return digest.hexdigest()
-

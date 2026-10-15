@@ -171,7 +171,9 @@ class SelfishMiningAttack:
             state=self._state,
             private_height=private_height,
             public_height=self._victim_node.height,
-            private_lead=private_height - self._victim_node.height if self.started else 0,
+            private_lead=private_height - self._victim_node.height
+            if self.started
+            else 0,
             private_blocks_mined=self._private_blocks_mined,
             public_blocks_mined=self._public_blocks_mined,
             blocks_published=self._blocks_published,

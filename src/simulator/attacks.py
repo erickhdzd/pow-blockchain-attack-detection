@@ -4,6 +4,7 @@ from dataclasses import dataclass
 from enum import IntEnum
 from math import isfinite
 
+
 class AttackType(IntEnum):
     """Define ground-truth classes used by the blockchain attack simulator."""
 
@@ -47,19 +48,13 @@ class DoubleSpendParameters:
     attacker_hash_share: float = 0.30
 
     def __post_init__(self) -> None:
-        if (
-            not isfinite(self.transaction_value)
-            or self.transaction_value <= 0.0
-        ):
+        if not isfinite(self.transaction_value) or self.transaction_value <= 0.0:
             raise ValueError(
-                "Double-spend transaction value must be a finite positive "
-                "value."
+                "Double-spend transaction value must be a finite positive value."
             )
 
         if self.target_confirmations <= 0:
-            raise ValueError(
-                "Double-spend target confirmations must be positive."
-            )
+            raise ValueError("Double-spend target confirmations must be positive.")
 
         if (
             not isfinite(self.attacker_hash_share)
@@ -69,6 +64,7 @@ class DoubleSpendParameters:
                 "Double-spend attacker hash share must be a finite value "
                 "in the interval (0, 0.5)."
             )
+
 
 @dataclass(slots=True, frozen=True)
 class SelfishMiningParameters:

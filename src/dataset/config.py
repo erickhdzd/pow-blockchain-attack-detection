@@ -106,7 +106,10 @@ class ExperimentPlan:
             raise ValueError("At least three scenarios per class are required.")
         if self.duration_blocks <= 0:
             raise ValueError("Simulation duration must be positive.")
-        if not isfinite(self.block_interval_seconds) or self.block_interval_seconds <= 0.0:
+        if (
+            not isfinite(self.block_interval_seconds)
+            or self.block_interval_seconds <= 0.0
+        ):
             raise ValueError("Block interval must be finite and positive.")
         if self.attack_start_margin < 0:
             raise ValueError("Attack start margin must be non-negative.")
@@ -120,7 +123,9 @@ class ExperimentPlan:
             window.maximum + 2 * self.attack_start_margin > self.duration_blocks
             for window in window_ranges
         ):
-            raise ValueError("Attack windows and margins must fit within the simulation.")
+            raise ValueError(
+                "Attack windows and margins must fit within the simulation."
+            )
         if not 0.0 < self.double_spend_q.minimum <= self.double_spend_q.maximum < 0.5:
             raise ValueError("Double-spend q range must lie within (0, 0.5).")
         if not 0.0 < self.selfish_q.minimum <= self.selfish_q.maximum < 0.5:
@@ -129,14 +134,19 @@ class ExperimentPlan:
             raise ValueError("Selfish-mining gamma range must lie within [0, 1].")
         if not 0.5 < self.majority_q.minimum <= self.majority_q.maximum <= 1.0:
             raise ValueError("Majority q range must lie within (0.5, 1].")
-        if not self.confirmation_targets or any(value <= 0 for value in self.confirmation_targets):
+        if not self.confirmation_targets or any(
+            value <= 0 for value in self.confirmation_targets
+        ):
             raise ValueError("Confirmation targets must contain positive integers.")
         if not self.miner_concentration_alphas:
             raise ValueError("At least one miner-concentration regime is required.")
         names = [name for name, _ in self.miner_concentration_alphas]
         if len(set(names)) != len(names):
             raise ValueError("Miner-concentration regime names must be unique.")
-        if any(not name or not isfinite(alpha) or alpha <= 0.0 for name, alpha in self.miner_concentration_alphas):
+        if any(
+            not name or not isfinite(alpha) or alpha <= 0.0
+            for name, alpha in self.miner_concentration_alphas
+        ):
             raise ValueError("Miner-concentration alphas must be finite and positive.")
         if not self.network_profiles:
             raise ValueError("At least one network profile is required.")
@@ -182,8 +192,7 @@ def load_experiment_plan(path: str | Path) -> ExperimentPlan:
     )
 
     concentration = tuple(
-        (name, float(alpha))
-        for name, alpha in mining["concentration_alpha"].items()
+        (name, float(alpha)) for name, alpha in mining["concentration_alpha"].items()
     )
 
     return ExperimentPlan(
@@ -214,7 +223,9 @@ def load_experiment_plan(path: str | Path) -> ExperimentPlan:
         selfish_q=_float_range(attacks["selfish_mining"], "attacker_hash_share"),
         selfish_gamma=_float_range(attacks["selfish_mining"], "gamma"),
         majority_q=_float_range(attacks["majority_attack"], "attacker_hash_share"),
-        confirmation_targets=tuple(int(value) for value in attacks["double_spend"]["target_confirmations"]),
+        confirmation_targets=tuple(
+            int(value) for value in attacks["double_spend"]["target_confirmations"]
+        ),
         miner_concentration_alphas=concentration,
         network_profiles=profiles,
         splits=SplitRatios(

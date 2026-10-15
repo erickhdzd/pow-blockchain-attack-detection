@@ -26,3 +26,10 @@ results/predictions_smoke/
 
 # Preliminary statistical-baseline artifact (not part of final paper results)
 results/statistical_baseline/calibration_raw_preliminary.json
+.venv315/
+.venv_pre_v2_backup/
+.py315_typing_backup/
+Errors.txt
+fix_remaining_ide_warnings.py
+python315_project_report.json
+*.bak

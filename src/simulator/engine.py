@@ -53,27 +53,21 @@ class SimulationParameters:
 
     def __post_init__(self) -> None:
         if self.duration_blocks <= 0:
-            raise ValueError(
-                "Simulation duration must be positive."
-            )
+            raise ValueError("Simulation duration must be positive.")
 
-        if (not isfinite(self.block_interval_seconds)
+        if (
+            not isfinite(self.block_interval_seconds)
             or self.block_interval_seconds <= 0.0
         ):
-            raise ValueError(
-                "Mean block interval must be a finite positive value."
-            )
+            raise ValueError("Mean block interval must be a finite positive value.")
 
         if not 0.0 < self.selfish_attacker_hash_share < 0.5:
             raise ValueError(
-                "Selfish-mining attacker hash share must be in the interval "
-                "(0, 0.5)."
+                "Selfish-mining attacker hash share must be in the interval (0, 0.5)."
             )
 
         if self.seed < 0:
-            raise ValueError(
-                "Simulation random seed must be non-negative."
-            )
+            raise ValueError("Simulation random seed must be non-negative.")
 
 
 @dataclass(slots=True, frozen=True)
@@ -90,49 +84,31 @@ class SimulationStep:
 
     def __post_init__(self) -> None:
         if self.step <= 0:
-            raise ValueError(
-                "Simulation step must be positive."
-            )
+            raise ValueError("Simulation step must be positive.")
 
         if self.timestamp < 0.0:
-            raise ValueError(
-                "Simulation timestamp must be non-negative."
-            )
+            raise ValueError("Simulation timestamp must be non-negative.")
 
         if self.canonical_height < 0:
-            raise ValueError(
-                "Canonical chain height must be non-negative."
-            )
+            raise ValueError("Canonical chain height must be non-negative.")
 
         if self.telemetry.timestamp != self.timestamp:
-            raise ValueError(
-                "Telemetry timestamp must equal simulation timestamp."
-            )
+            raise ValueError("Telemetry timestamp must equal simulation timestamp.")
 
         if self.features.timestamp != self.timestamp:
-            raise ValueError(
-                "Feature timestamp must equal simulation timestamp."
-            )
+            raise ValueError("Feature timestamp must equal simulation timestamp.")
 
         if self.chain_observation.height != self.canonical_height:
-            raise ValueError(
-                "Chain observation height must equal canonical height."
-            )
+            raise ValueError("Chain observation height must equal canonical height.")
 
         if self.telemetry.reference_height != self.canonical_height:
-            raise ValueError(
-                "Telemetry reference height must equal canonical height."
-            )
+            raise ValueError("Telemetry reference height must equal canonical height.")
 
         if self.features.canonical_height != self.canonical_height:
-            raise ValueError(
-                "Feature canonical height must equal simulation height."
-            )
+            raise ValueError("Feature canonical height must equal simulation height.")
 
         if self.features.reference_height != self.canonical_height:
-            raise ValueError(
-                "Feature reference height must equal simulation height."
-            )
+            raise ValueError("Feature reference height must equal simulation height.")
 
 
 class SimulationEngine:
@@ -146,14 +122,10 @@ class SimulationEngine:
         public_miners: Sequence[Miner],
     ) -> None:
         if not network.nodes:
-            raise ValueError(
-                "Simulation network must contain at least one node."
-            )
+            raise ValueError("Simulation network must contain at least one node.")
 
         if not public_miners:
-            raise ValueError(
-                "Simulation must contain at least one public miner."
-            )
+            raise ValueError("Simulation must contain at least one public miner.")
 
         self._network = network
         self._attack_configuration = attack_configuration
@@ -161,18 +133,10 @@ class SimulationEngine:
 
         self._rng = Random(parameters.seed)
 
-        self._clock_rng = Random(
-            self._derived_seed(4)
-        )
-        self._double_spend_rng = Random(
-            self._derived_seed(5)
-        )
-        self._selfish_mining_rng = Random(
-            self._derived_seed(6)
-        )
-        self._majority_attack_rng = Random(
-            self._derived_seed(7)
-        )
+        self._clock_rng = Random(self._derived_seed(4))
+        self._double_spend_rng = Random(self._derived_seed(5))
+        self._selfish_mining_rng = Random(self._derived_seed(6))
+        self._majority_attack_rng = Random(self._derived_seed(7))
 
         self._mining_pool = MiningPool(
             public_miners,
@@ -231,9 +195,7 @@ class SimulationEngine:
         """Run the deterministic simulation exactly once."""
 
         if self._steps:
-            raise RuntimeError(
-                "Simulation engine can only be run once."
-            )
+            raise RuntimeError("Simulation engine can only be run once.")
 
         reference_node = self._reference_node()
 
@@ -243,17 +205,13 @@ class SimulationEngine:
         timestamp = 0.0
 
         for step in range(
-                1,
-                self._parameters.duration_blocks + 1,
+            1,
+            self._parameters.duration_blocks + 1,
         ):
             timestamp += self._sample_next_block_interval()
-            self._advance_network(
-                timestamp
-            )
+            self._advance_network(timestamp)
 
-            attack_label = (
-                self._attack_configuration.label_at(step)
-            )
+            attack_label = self._attack_configuration.label_at(step)
 
             if (
                 self._previous_attack_label is AttackType.DOUBLE_SPEND
@@ -284,11 +242,7 @@ class SimulationEngine:
                 timestamp=timestamp,
             )
 
-            chain_observation = (
-                self._chain_observer.observe(
-                    reference_node
-                )
-            )
+            chain_observation = self._chain_observer.observe(reference_node)
 
             features = ObservableFeatureExtractor.extract(
                 telemetry=telemetry,
@@ -324,13 +278,9 @@ class SimulationEngine:
     ) -> None:
         """Process due deliveries and reconcile previously observed chains."""
 
-        self._network.deliver_until(
-            timestamp
-        )
+        self._network.deliver_until(timestamp)
 
-        self._network.reconcile_from(
-            self._reference_node().node_id
-        )
+        self._network.reconcile_from(self._reference_node().node_id)
 
     def _execute_step(
         self,
@@ -357,8 +307,7 @@ class SimulationEngine:
             return
 
         raise ValueError(
-            f"Unsupported attack type at simulation step {step}: "
-            f"{attack_label!r}."
+            f"Unsupported attack type at simulation step {step}: {attack_label!r}."
         )
 
     def _mine_honest_block(
@@ -380,9 +329,7 @@ class SimulationEngine:
             sent_at=timestamp,
         )
 
-        self._network.deliver_until(
-            timestamp
-        )
+        self._network.deliver_until(timestamp)
 
         return block
 
@@ -397,9 +344,7 @@ class SimulationEngine:
         if scenario is None:
             scenario = DoubleSpendScenario(
                 victim_node=self._reference_node(),
-                parameters=(
-                    self._attack_configuration.double_spend
-                ),
+                parameters=self._attack_configuration.double_spend,
                 attacker_id="double_spend_attacker",
                 sender="attacker_wallet",
                 victim_receiver="merchant_wallet",
@@ -584,23 +529,16 @@ class SimulationEngine:
         return self._network.nodes[0]
 
     def _sample_next_block_interval(
-            self,
+        self,
     ) -> float:
         """Sample one strictly positive exponential PoW block interval."""
 
-        rate = (
-                1.0
-                / self._parameters.block_interval_seconds
-        )
+        rate = 1.0 / self._parameters.block_interval_seconds
 
-        interval = self._clock_rng.expovariate(
-            rate
-        )
+        interval = self._clock_rng.expovariate(rate)
 
         while interval <= 0.0:
-            interval = self._clock_rng.expovariate(
-                rate
-            )
+            interval = self._clock_rng.expovariate(rate)
 
         return interval
 

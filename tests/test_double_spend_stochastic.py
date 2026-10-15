@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 from collections import Counter
+from itertools import pairwise
 from math import isfinite
 from pathlib import Path
 
@@ -281,7 +282,10 @@ def test_12_engine_runs_one_stochastic_event_per_step() -> None:
     assert len(steps) == 40
     assert status is not None
     assert network.nodes[0].blockchain.validate()
-    assert status.state in {DoubleSpendScenarioState.SUCCEEDED, DoubleSpendScenarioState.FAILED}
+    assert status.state in {
+        DoubleSpendScenarioState.SUCCEEDED,
+        DoubleSpendScenarioState.FAILED,
+    }
 
 
 def test_13_attack_window_labels_are_unchanged() -> None:
@@ -366,8 +370,7 @@ def test_21_stochastic_pow_clock_remains_positive_and_nonfixed() -> None:
     steps = engine.run()
     timestamps = [step.timestamp for step in steps]
     intervals = [timestamps[0]] + [
-        current - previous
-        for previous, current in zip(timestamps, timestamps[1:])
+        current - previous for previous, current in pairwise(timestamps)
     ]
     assert all(isfinite(value) and value > 0.0 for value in intervals)
     assert len({round(value, 6) for value in intervals}) > 190
@@ -377,7 +380,9 @@ def test_22_q_selector_tracks_configured_probability() -> None:
     _, low_engine = make_engine(seed=2028, q=0.10)
     _, high_engine = make_engine(seed=2028, q=0.45)
     low = Counter(low_engine._select_double_spend_mining_side() for _ in range(10_000))
-    high = Counter(high_engine._select_double_spend_mining_side() for _ in range(10_000))
+    high = Counter(
+        high_engine._select_double_spend_mining_side() for _ in range(10_000)
+    )
     low_rate = low[DoubleSpendMiningSide.ATTACKER] / 10_000
     high_rate = high[DoubleSpendMiningSide.ATTACKER] / 10_000
     assert 0.08 < low_rate < 0.12

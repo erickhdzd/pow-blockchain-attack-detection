@@ -2,6 +2,7 @@ from __future__ import annotations
 
 import json
 from pathlib import Path
+from typing import Any, cast
 
 import numpy as np
 import pandas as pd
@@ -9,7 +10,12 @@ import pytest
 import torch
 from sklearn.preprocessing import StandardScaler
 
-from src.training.artifacts import aggregate_runs, sha256_file, write_manifest, write_summary_table
+from src.training.artifacts import (
+    aggregate_runs,
+    sha256_file,
+    write_manifest,
+    write_summary_table,
+)
 from src.training.classical import build_classical_model, predict_probabilities
 from src.training.config import TrainingConfig, load_training_config
 from src.training.data import (
@@ -22,7 +28,11 @@ from src.training.data import (
     make_endpoint_view,
     make_sequences,
 )
-from src.training.metrics import CLASS_NAMES, detection_delay_blocks, evaluate_multiclass
+from src.training.metrics import (
+    CLASS_NAMES,
+    detection_delay_blocks,
+    evaluate_multiclass,
+)
 from src.training.models import build_neural_model, parameter_count
 from src.training.neural import fit_neural, predict_neural, resolve_device
 from src.training.reproducibility import seed_everything
@@ -44,7 +54,9 @@ def _metadata(simulations: int, rows_per_simulation: int) -> pd.DataFrame:
                     "configured_attack_type": configured,
                     "attack_active": configured != 0 and 3 <= step <= 6,
                     "attack_successful": configured != 0,
-                    "attack_phase": "active" if configured != 0 and 3 <= step <= 6 else "pre_attack",
+                    "attack_phase": "active"
+                    if configured != 0 and 3 <= step <= 6
+                    else "pre_attack",
                     "attack_start_step": 3,
                     "attack_end_step": 6,
                     "attacker_hash_share": 0.3 if configured else np.nan,
@@ -72,12 +84,16 @@ def _write_dataset(root: Path) -> None:
         y = metadata["configured_attack_type"].to_numpy(dtype=np.int64)
         x = rng.normal(size=(len(metadata), len(feature_names))).astype(np.float32)
         x[:, 0] += y
-        pd.DataFrame(x, columns=feature_names).to_csv(root / "splits" / f"x_{split}.csv", index=False)
+        pd.DataFrame(x, columns=feature_names).to_csv(
+            root / "splits" / f"x_{split}.csv", index=False
+        )
         pd.DataFrame(x[:, :3], columns=feature_names[:3]).to_csv(
             root / "splits" / f"x_early_{split}.csv",
             index=False,
         )
-        pd.DataFrame({"attack_label": y}).to_csv(root / "splits" / f"y_{split}.csv", index=False)
+        pd.DataFrame({"attack_label": y}).to_csv(
+            root / "splits" / f"y_{split}.csv", index=False
+        )
         metadata.to_csv(root / "splits" / f"metadata_{split}.csv", index=False)
     (root / "manifests").mkdir(exist_ok=True)
     (root / "manifests" / "dataset_manifest.json").write_text("{}\n", encoding="utf-8")
@@ -121,7 +137,10 @@ def test_02_invalid_device_rejected() -> None:
         )
 
 
-@pytest.mark.parametrize("field", ["batch_size", "max_epochs", "patience", "sequence_length", "sequence_stride"])
+@pytest.mark.parametrize(
+    "field",
+    ["batch_size", "max_epochs", "patience", "sequence_length", "sequence_stride"],
+)
 def test_03_nonpositive_training_dimensions_rejected(field: str) -> None:
     values = {
         "seeds": (1,),
@@ -144,7 +163,7 @@ def test_03_nonpositive_training_dimensions_rejected(field: str) -> None:
         field: 0,
     }
     with pytest.raises(ValueError):
-        TrainingConfig(**values)
+        TrainingConfig(**cast(Any, values))
 
 
 def test_04_bundle_scaler_is_fit_on_train_only(tiny_dataset: Path) -> None:
@@ -190,7 +209,12 @@ def test_09_sequence_label_matches_last_timestep() -> None:
 
 
 def test_10_class_names_are_stable() -> None:
-    assert CLASS_NAMES == ("normal", "double_spend", "selfish_mining", "majority_attack")
+    assert CLASS_NAMES == (
+        "normal",
+        "double_spend",
+        "selfish_mining",
+        "majority_attack",
+    )
 
 
 def test_11_perfect_metrics_equal_one() -> None:
@@ -210,10 +234,10 @@ def test_12_confusion_matrix_is_four_by_four() -> None:
 def test_13_detection_delay_uses_attack_start() -> None:
     metadata = _metadata(4, 8)
     predictions = np.zeros(len(metadata), dtype=np.int64)
-    for index, row in metadata.iterrows():
+    for position, (_, row) in enumerate(metadata.iterrows()):
         configured = int(row["configured_attack_type"])
         if configured and int(row["step"]) >= 5:
-            predictions[index] = configured
+            predictions[position] = configured
     delay = detection_delay_blocks(metadata, predictions)
     assert delay["detected_attack_scenarios"] == 3.0
     assert delay["mean_detection_delay_blocks"] == pytest.approx(2.0)
@@ -224,10 +248,12 @@ def test_14_detection_delay_accepts_textual_attack_names() -> None:
     names = {0: "NORMAL", 1: "DOUBLE_SPEND", 2: "SELFISH_MINING", 3: "MAJORITY_ATTACK"}
     metadata["configured_attack_type"] = metadata["configured_attack_type"].map(names)
     predictions = np.zeros(len(metadata), dtype=np.int64)
-    for index, row in metadata.iterrows():
-        attack_id = {value: key for key, value in names.items()}[row["configured_attack_type"]]
+    for position, (_, row) in enumerate(metadata.iterrows()):
+        attack_id = {value: key for key, value in names.items()}[
+            row["configured_attack_type"]
+        ]
         if attack_id and int(row["step"]) >= 5:
-            predictions[index] = attack_id
+            predictions[position] = attack_id
     delay = detection_delay_blocks(metadata, predictions)
     assert delay["detected_attack_scenarios"] == 3.0
     assert delay["mean_detection_delay_blocks"] == pytest.approx(2.0)
@@ -244,7 +270,9 @@ def test_15_logistic_regression_outputs_four_probabilities() -> None:
     assert np.allclose(probabilities.sum(axis=1), 1.0)
 
 
-@pytest.mark.parametrize("name", ["logistic_regression", "random_forest", "hist_gradient_boosting"])
+@pytest.mark.parametrize(
+    "name", ["logistic_regression", "random_forest", "hist_gradient_boosting"]
+)
 def test_15_supported_classical_models_build(name: str) -> None:
     assert build_classical_model(name, 42, {}) is not None
 
@@ -254,9 +282,18 @@ def test_16_unknown_classical_model_rejected() -> None:
         build_classical_model("unknown", 42, {})
 
 
-@pytest.mark.parametrize("name", ["mlp", "cnn1d", "lstm", "gru", "cnn_lstm", "transformer"])
+@pytest.mark.parametrize(
+    "name", ["mlp", "cnn1d", "lstm", "gru", "cnn_lstm", "transformer"]
+)
 def test_17_neural_forward_shape(name: str) -> None:
-    settings = {"hidden_dim": 16, "num_layers": 1, "d_model": 16, "nhead": 4, "dim_feedforward": 32, "dropout": 0.0}
+    settings = {
+        "hidden_dim": 16,
+        "num_layers": 1,
+        "d_model": 16,
+        "nhead": 4,
+        "dim_feedforward": 32,
+        "dropout": 0.0,
+    }
     model = build_neural_model(name, 5, 8, settings)
     x = torch.randn(3, 5) if name == "mlp" else torch.randn(3, 8, 5)
     assert model(x).shape == (3, 4)
@@ -350,34 +387,41 @@ def test_26_manifest_is_sorted_json(tmp_path: Path) -> None:
     assert list(json.loads(path.read_text(encoding="utf-8"))) == ["a", "z"]
 
 
-
 def test_27_endpoint_view_matches_sequence_endpoints(tiny_dataset: Path) -> None:
     bundle = load_dataset_bundle(tiny_dataset, "x")
     aligned = make_aligned_split_views(bundle.test, length=4, stride=2)
     assert len(aligned.endpoints.y) == len(aligned.sequences.y)
     assert np.array_equal(aligned.endpoints.y, aligned.sequences.y)
-    assert aligned.endpoints.metadata["sample_id"].tolist() == aligned.sequences.metadata[
-        "sample_id"
-    ].tolist()
+    assert (
+        aligned.endpoints.metadata["sample_id"].tolist()
+        == aligned.sequences.metadata["sample_id"].tolist()
+    )
 
 
-def test_28_tabular_endpoint_features_match_final_sequence_timestep(tiny_dataset: Path) -> None:
+def test_28_tabular_endpoint_features_match_final_sequence_timestep(
+    tiny_dataset: Path,
+) -> None:
     bundle = load_dataset_bundle(tiny_dataset, "x")
     aligned = make_aligned_split_views(bundle.test, length=4, stride=2)
     assert np.array_equal(aligned.endpoints.x, aligned.sequences.x[:, -1, :])
 
 
-def test_29_all_splits_have_common_endpoint_and_sequence_counts(tiny_dataset: Path) -> None:
+def test_29_all_splits_have_common_endpoint_and_sequence_counts(
+    tiny_dataset: Path,
+) -> None:
     bundle = load_dataset_bundle(tiny_dataset, "x")
     views = make_aligned_dataset_views(bundle, length=4, stride=2)
     for split in (views.train, views.validation, views.test):
         assert len(split.endpoints.y) == len(split.sequences.y)
-        assert split.endpoints.metadata["sample_id"].tolist() == split.sequences.metadata[
-            "sample_id"
-        ].tolist()
+        assert (
+            split.endpoints.metadata["sample_id"].tolist()
+            == split.sequences.metadata["sample_id"].tolist()
+        )
 
 
-def test_30_general_and_early_views_share_identical_logical_endpoints(tiny_dataset: Path) -> None:
+def test_30_general_and_early_views_share_identical_logical_endpoints(
+    tiny_dataset: Path,
+) -> None:
     general = load_dataset_bundle(tiny_dataset, "x")
     early = load_dataset_bundle(tiny_dataset, "x_early")
     for general_split, early_split in (
@@ -388,9 +432,10 @@ def test_30_general_and_early_views_share_identical_logical_endpoints(tiny_datas
         general_endpoints = make_endpoint_view(general_split, length=4, stride=2)
         early_endpoints = make_endpoint_view(early_split, length=4, stride=2)
         assert np.array_equal(general_endpoints.y, early_endpoints.y)
-        assert general_endpoints.metadata["sample_id"].tolist() == early_endpoints.metadata[
-            "sample_id"
-        ].tolist()
+        assert (
+            general_endpoints.metadata["sample_id"].tolist()
+            == early_endpoints.metadata["sample_id"].tolist()
+        )
 
 
 def test_31_smoke_run_records_identical_evaluation_support_for_all_models(
@@ -443,7 +488,7 @@ paths:
         encoding="utf-8",
     )
     run_experiments(config_path, "smoke")
-    runs = pd.read_csv(results_root / "metrics" / "run_metrics.csv")
+    runs = pd.read_csv(str(results_root / "metrics" / "run_metrics.csv"))
     assert len(runs) == 3
     assert runs["test_samples"].nunique() == 1
     assert runs["train_samples"].nunique() == 1
@@ -451,7 +496,9 @@ paths:
     assert runs["evaluation_sample_id_sha256"].nunique() == 1
 
     manifest = json.loads(
-        (results_root / "manifests" / "training_manifest.json").read_text(encoding="utf-8")
+        (results_root / "manifests" / "training_manifest.json").read_text(
+            encoding="utf-8"
+        )
     )
     audit = manifest["aligned_endpoints"]["general"]
     assert audit["test_samples"] == int(runs["test_samples"].iloc[0])
@@ -465,7 +512,7 @@ def test_32_feature_ablation_preserves_samples_and_removes_only_requested_featur
 
     for split in ("train", "validation", "test"):
         x_path = tiny_dataset / "splits" / f"x_{split}.csv"
-        x = pd.read_csv(x_path)
+        x = pd.read_csv(str(x_path))
         x["dominant_miner_ratio"] = np.linspace(0.1, 0.9, len(x))
         x["miner_hhi"] = np.linspace(0.2, 0.8, len(x))
         x.to_csv(x_path, index=False)
@@ -480,7 +527,9 @@ def test_32_feature_ablation_preserves_samples_and_removes_only_requested_featur
     removed = {"dominant_miner_ratio", "miner_hhi"}
 
     assert set(full.train.feature_names) - set(ablated.train.feature_names) == removed
-    assert len(ablated.train.feature_names) == len(full.train.feature_names) - len(removed)
+    assert len(ablated.train.feature_names) == len(full.train.feature_names) - len(
+        removed
+    )
 
     for full_split, ablated_split in (
         (full.train, ablated.train),
@@ -507,16 +556,16 @@ def test_33_external_split_uses_id_scaler_without_refitting(
         bundle.train.feature_names,
     )
 
-    raw_test = pd.read_csv(tiny_dataset / "splits" / "x_test.csv")
-    expected = bundle.scaler.transform(
-        raw_test.to_numpy(dtype=np.float32)
-    ).astype(np.float32)
+    raw_test = pd.read_csv(str(tiny_dataset / "splits" / "x_test.csv"))
+    expected = bundle.scaler.transform(raw_test.to_numpy(dtype=np.float32)).astype(
+        np.float32
+    )
 
     assert np.allclose(external.x, expected)
     assert external.feature_names == bundle.train.feature_names
     assert np.array_equal(
         external.y,
-        pd.read_csv(tiny_dataset / "splits" / "y_test.csv")[
+        pd.read_csv(str(tiny_dataset / "splits" / "y_test.csv"))[
             "attack_label"
         ].to_numpy(dtype=np.int64),
     )
@@ -537,10 +586,8 @@ def test_34_external_dataset_preserves_simulation_boundaries(
     }
 
     for split, offset in offsets.items():
-        metadata_path = (
-            tiny_dataset / "splits" / f"metadata_{split}.csv"
-        )
-        metadata = pd.read_csv(metadata_path)
+        metadata_path = tiny_dataset / "splits" / f"metadata_{split}.csv"
+        metadata = pd.read_csv(str(metadata_path))
 
         original_ids = metadata["simulation_id"].astype(str).unique()
         mapping = {
@@ -548,9 +595,7 @@ def test_34_external_dataset_preserves_simulation_boundaries(
             for index, simulation_id in enumerate(original_ids)
         }
 
-        metadata["simulation_id"] = (
-            metadata["simulation_id"].astype(str).map(mapping)
-        )
+        metadata["simulation_id"] = metadata["simulation_id"].astype(str).map(mapping)
         metadata.to_csv(metadata_path, index=False)
 
     bundle = load_dataset_bundle(tiny_dataset, "x")
@@ -563,7 +608,7 @@ def test_34_external_dataset_preserves_simulation_boundaries(
     )
 
     expected_rows = sum(
-        len(pd.read_csv(tiny_dataset / "splits" / f"y_{split}.csv"))
+        len(pd.read_csv(str(tiny_dataset / "splits" / f"y_{split}.csv")))
         for split in ("train", "validation", "test")
     )
 
@@ -584,28 +629,19 @@ def test_34_external_dataset_preserves_simulation_boundaries(
     assert simulations_per_split["train"].isdisjoint(
         simulations_per_split["validation"]
     )
-    assert simulations_per_split["train"].isdisjoint(
-        simulations_per_split["test"]
-    )
-    assert simulations_per_split["validation"].isdisjoint(
-        simulations_per_split["test"]
-    )
+    assert simulations_per_split["train"].isdisjoint(simulations_per_split["test"])
+    assert simulations_per_split["validation"].isdisjoint(simulations_per_split["test"])
 
     # Deliberately contaminate validation with one train simulation.
     train_simulation = next(iter(simulations_per_split["train"]))
 
-    validation_metadata_path = (
-        tiny_dataset / "splits" / "metadata_validation.csv"
-    )
-    validation_metadata = pd.read_csv(validation_metadata_path)
+    validation_metadata_path = tiny_dataset / "splits" / "metadata_validation.csv"
+    validation_metadata = pd.read_csv(str(validation_metadata_path))
 
-    validation_simulation = (
-        validation_metadata["simulation_id"].astype(str).iloc[0]
-    )
+    validation_simulation = validation_metadata["simulation_id"].astype(str).iloc[0]
 
     validation_metadata.loc[
-        validation_metadata["simulation_id"].astype(str)
-        == validation_simulation,
+        validation_metadata["simulation_id"].astype(str) == validation_simulation,
         "simulation_id",
     ] = train_simulation
 

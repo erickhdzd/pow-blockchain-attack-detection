@@ -1,3 +1,4 @@
+# ruff: noqa: TRY004
 """Robust statistical anomaly baseline for PoW attack detection.
 
 The baseline models NORMAL training endpoints using robust univariate
@@ -44,30 +45,18 @@ def load_aligned_split(
     stride: int,
 ) -> tuple[pd.DataFrame, np.ndarray, pd.DataFrame]:
     if split not in {"train", "validation"}:
-        raise ValueError(
-            "Calibration may access only train and validation."
-        )
+        raise ValueError("Calibration may access only train and validation.")
 
-    x = pd.read_csv(root / f"x_early_{split}.csv")
-    y = (
-        pd.read_csv(root / f"y_{split}.csv")
-        .iloc[:, 0]
-        .to_numpy(dtype=np.int64)
-    )
-    metadata = pd.read_csv(
-        root / f"metadata_{split}.csv"
-    )
+    x = pd.read_csv(str(root / f"x_early_{split}.csv"))
+    y = pd.read_csv(str(root / f"y_{split}.csv")).iloc[:, 0].to_numpy(dtype=np.int64)
+    metadata = pd.read_csv(str(root / f"metadata_{split}.csv"))
 
     missing = set(FEATURES) - set(x.columns)
     if missing:
-        raise ValueError(
-            f"{split} is missing features: {sorted(missing)}"
-        )
+        raise ValueError(f"{split} is missing features: {sorted(missing)}")
 
     if not (len(x) == len(y) == len(metadata)):
-        raise ValueError(
-            f"{split}: X/y/metadata length mismatch."
-        )
+        raise ValueError(f"{split}: X/y/metadata length mismatch.")
 
     selected = pd.DataFrame(
         x.loc[:, list(FEATURES)].to_numpy(dtype=float),
@@ -109,12 +98,7 @@ def fit_normal_reference(
         raise ValueError("Training data contain no NORMAL endpoints.")
 
     median = normal.median(axis=0).to_numpy(dtype=float)
-    mad = (
-        (normal - normal.median(axis=0))
-        .abs()
-        .median(axis=0)
-        .to_numpy(dtype=float)
-    )
+    mad = (normal - normal.median(axis=0)).abs().median(axis=0).to_numpy(dtype=float)
     scale = MAD_NORMALIZATION * mad
 
     if not np.isfinite(median).all():
@@ -122,13 +106,8 @@ def fit_normal_reference(
     if not np.isfinite(scale).all():
         raise ValueError("Non-finite NORMAL scales.")
     if np.any(scale <= 0.0):
-        bad = [
-            FEATURES[index]
-            for index in np.flatnonzero(scale <= 0.0)
-        ]
-        raise ValueError(
-            f"Non-positive robust scales: {bad}"
-        )
+        bad = [FEATURES[index] for index in np.flatnonzero(scale <= 0.0)]
+        raise ValueError(f"Non-positive robust scales: {bad}")
 
     return median, scale
 
@@ -157,18 +136,10 @@ def binary_metrics(
     y_pred = (scores >= threshold).astype(np.int64)
 
     return {
-        "f1": float(
-            f1_score(y_true, y_pred, zero_division=0)
-        ),
-        "precision": float(
-            precision_score(y_true, y_pred, zero_division=0)
-        ),
-        "recall": float(
-            recall_score(y_true, y_pred, zero_division=0)
-        ),
-        "balanced_accuracy": float(
-            balanced_accuracy_score(y_true, y_pred)
-        ),
+        "f1": float(f1_score(y_true, y_pred, zero_division=0)),
+        "precision": float(precision_score(y_true, y_pred, zero_division=0)),
+        "recall": float(recall_score(y_true, y_pred, zero_division=0)),
+        "balanced_accuracy": float(balanced_accuracy_score(y_true, y_pred)),
         "mcc": float(matthews_corrcoef(y_true, y_pred)),
     }
 
@@ -177,9 +148,7 @@ def candidate_thresholds(scores: np.ndarray) -> np.ndarray:
     unique_scores = np.unique(scores)
 
     if unique_scores.size < 2:
-        raise ValueError(
-            "Validation anomaly scores contain fewer than two values."
-        )
+        raise ValueError("Validation anomaly scores contain fewer than two values.")
 
     return np.concatenate(
         (
@@ -191,11 +160,7 @@ def candidate_thresholds(scores: np.ndarray) -> np.ndarray:
                     )
                 ]
             ),
-            (
-                unique_scores[:-1]
-                + unique_scores[1:]
-            )
-            / 2.0,
+            (unique_scores[:-1] + unique_scores[1:]) / 2.0,
             np.array(
                 [
                     np.nextafter(
@@ -274,30 +239,19 @@ def calibrate(
         stride,
     )
 
-    print(
-        "Aligned endpoints: "
-        f"train={len(y_train)}, "
-        f"validation={len(y_validation)}"
-    )
+    print(f"Aligned endpoints: train={len(y_train)}, validation={len(y_validation)}")
 
     if len(y_train) != 9540:
-        raise ValueError(
-            f"Expected 9540 train endpoints, got {len(y_train)}."
-        )
+        raise ValueError(f"Expected 9540 train endpoints, got {len(y_train)}.")
     if len(y_validation) != 1980:
         raise ValueError(
-            "Expected 1980 validation endpoints, "
-            f"got {len(y_validation)}."
+            f"Expected 1980 validation endpoints, got {len(y_validation)}."
         )
 
     if train_metadata["simulation_id"].nunique() != 212:
-        raise ValueError(
-            "Unexpected train simulation count."
-        )
+        raise ValueError("Unexpected train simulation count.")
     if validation_metadata["simulation_id"].nunique() != 44:
-        raise ValueError(
-            "Unexpected validation simulation count."
-        )
+        raise ValueError("Unexpected validation simulation count.")
 
     median, scale = fit_normal_reference(
         x_train,
@@ -331,17 +285,11 @@ def calibrate(
             "sequence_length": length,
             "stride": stride,
             "endpoint": "final_timestep",
-            "train_endpoint_count": int(len(y_train)),
-            "validation_endpoint_count": int(
-                len(y_validation)
-            ),
-            "train_simulation_count": int(
-                train_metadata["simulation_id"].nunique()
-            ),
+            "train_endpoint_count": len(y_train),
+            "validation_endpoint_count": len(y_validation),
+            "train_simulation_count": int(train_metadata["simulation_id"].nunique()),
             "validation_simulation_count": int(
-                validation_metadata[
-                    "simulation_id"
-                ].nunique()
+                validation_metadata["simulation_id"].nunique()
             ),
         },
         "threshold_tiebreakers": [
@@ -351,13 +299,9 @@ def calibrate(
         ],
         "threshold": threshold,
         "validation_metrics": metrics,
-        "normal_train_count": int(
-            np.count_nonzero(y_train == 0)
-        ),
-        "validation_count": int(len(y_validation)),
-        "validation_attack_count": int(
-            np.count_nonzero(y_validation != 0)
-        ),
+        "normal_train_count": int(np.count_nonzero(y_train == 0)),
+        "validation_count": len(y_validation),
+        "validation_attack_count": int(np.count_nonzero(y_validation != 0)),
         "normal_median": {
             feature: float(value)
             for feature, value in zip(
@@ -397,7 +341,6 @@ def calibrate(
     print(f"Artifact: {output_path}")
 
 
-
 def load_test_aligned_split(
     root: Path,
     features: tuple[str, ...],
@@ -406,26 +349,16 @@ def load_test_aligned_split(
 ) -> tuple[pd.DataFrame, np.ndarray, pd.DataFrame]:
     """Load test endpoints without exposing test to calibration."""
 
-    x = pd.read_csv(root / "x_early_test.csv")
-    y = (
-        pd.read_csv(root / "y_test.csv")
-        .iloc[:, 0]
-        .to_numpy(dtype=np.int64)
-    )
-    metadata = pd.read_csv(
-        root / "metadata_test.csv"
-    )
+    x = pd.read_csv(str(root / "x_early_test.csv"))
+    y = pd.read_csv(str(root / "y_test.csv")).iloc[:, 0].to_numpy(dtype=np.int64)
+    metadata = pd.read_csv(str(root / "metadata_test.csv"))
 
     missing = set(features) - set(x.columns)
     if missing:
-        raise ValueError(
-            f"test is missing features: {sorted(missing)}"
-        )
+        raise ValueError(f"test is missing features: {sorted(missing)}")
 
     if not (len(x) == len(y) == len(metadata)):
-        raise ValueError(
-            "test: X/y/metadata length mismatch."
-        )
+        raise ValueError("test: X/y/metadata length mismatch.")
 
     selected = pd.DataFrame(
         x.loc[:, list(features)].to_numpy(dtype=float),
@@ -464,131 +397,81 @@ def evaluate_frozen(
 ) -> None:
     """Evaluate test once using an immutable calibration artifact."""
 
-    artifact = json.loads(
-        calibration_path.read_text(encoding="utf-8")
-    )
+    artifact = json.loads(calibration_path.read_text(encoding="utf-8"))
 
-    if artifact.get("method") != (
-        "robust_statistical_anomaly_baseline"
-    ):
-        raise ValueError(
-            "Unexpected calibration method."
-        )
+    if artifact.get("method") != "robust_statistical_anomaly_baseline":
+        raise ValueError("Unexpected calibration method.")
 
     if artifact.get("threshold_source") != "validation":
-        raise ValueError(
-            "Frozen threshold was not selected on validation."
-        )
+        raise ValueError("Frozen threshold was not selected on validation.")
 
     features_value = artifact.get("features")
     if not isinstance(features_value, list):
-        raise ValueError(
-            "Calibration artifact has invalid features."
-        )
+        raise ValueError("Calibration artifact has invalid features.")
 
-    features = tuple(
-        str(feature)
-        for feature in features_value
-    )
+    features = tuple(str(feature) for feature in features_value)
 
     if features != FEATURES:
-        raise ValueError(
-            "Frozen feature schema does not match "
-            "the canonical baseline."
-        )
+        raise ValueError("Frozen feature schema does not match the canonical baseline.")
 
     alignment = artifact.get("alignment")
     if not isinstance(alignment, dict):
-        raise ValueError(
-            "Calibration artifact has no alignment metadata."
-        )
+        raise ValueError("Calibration artifact has no alignment metadata.")
 
     length_value = alignment.get("sequence_length")
     stride_value = alignment.get("stride")
 
     if not isinstance(length_value, int):
-        raise ValueError(
-            "Invalid frozen sequence length."
-        )
+        raise ValueError("Invalid frozen sequence length.")
     if not isinstance(stride_value, int):
-        raise ValueError(
-            "Invalid frozen stride."
-        )
+        raise ValueError("Invalid frozen stride.")
 
     threshold_value = artifact.get("threshold")
     if not isinstance(threshold_value, (int, float)):
-        raise ValueError(
-            "Invalid frozen threshold."
-        )
+        raise ValueError("Invalid frozen threshold.")
     threshold = float(threshold_value)
 
     median_values = artifact.get("normal_median")
     scale_values = artifact.get("normal_scale")
 
     if not isinstance(median_values, dict):
-        raise ValueError(
-            "Invalid frozen NORMAL medians."
-        )
+        raise ValueError("Invalid frozen NORMAL medians.")
     if not isinstance(scale_values, dict):
-        raise ValueError(
-            "Invalid frozen NORMAL scales."
-        )
+        raise ValueError("Invalid frozen NORMAL scales.")
 
     try:
         median = np.asarray(
-            [
-                float(median_values[feature])
-                for feature in features
-            ],
+            [float(median_values[feature]) for feature in features],
             dtype=float,
         )
         scale = np.asarray(
-            [
-                float(scale_values[feature])
-                for feature in features
-            ],
+            [float(scale_values[feature]) for feature in features],
             dtype=float,
         )
     except (KeyError, TypeError, ValueError) as exc:
-        raise ValueError(
-            "Invalid frozen feature statistics."
-        ) from exc
+        raise ValueError("Invalid frozen feature statistics.") from exc
 
     if not np.isfinite(median).all():
-        raise ValueError(
-            "Frozen medians contain non-finite values."
-        )
+        raise ValueError("Frozen medians contain non-finite values.")
     if not np.isfinite(scale).all():
-        raise ValueError(
-            "Frozen scales contain non-finite values."
-        )
+        raise ValueError("Frozen scales contain non-finite values.")
     if np.any(scale <= 0.0):
-        raise ValueError(
-            "Frozen scales must be positive."
-        )
+        raise ValueError("Frozen scales must be positive.")
     if not np.isfinite(threshold):
-        raise ValueError(
-            "Frozen threshold must be finite."
-        )
+        raise ValueError("Frozen threshold must be finite.")
 
-    x_test, y_test, test_metadata = (
-        load_test_aligned_split(
-            data_root,
-            features,
-            length_value,
-            stride_value,
-        )
+    x_test, y_test, test_metadata = load_test_aligned_split(
+        data_root,
+        features,
+        length_value,
+        stride_value,
     )
 
     if len(y_test) != 1980:
-        raise ValueError(
-            f"Expected 1980 test endpoints, got {len(y_test)}."
-        )
+        raise ValueError(f"Expected 1980 test endpoints, got {len(y_test)}.")
 
     if test_metadata["simulation_id"].nunique() != 44:
-        raise ValueError(
-            "Unexpected test simulation count."
-        )
+        raise ValueError("Unexpected test simulation count.")
 
     expected_counts = {
         0: 1882,
@@ -605,10 +488,7 @@ def evaluate_frozen(
     }
 
     if observed_counts != expected_counts:
-        raise ValueError(
-            "Unexpected test label distribution: "
-            f"{observed_counts}"
-        )
+        raise ValueError(f"Unexpected test label distribution: {observed_counts}")
 
     scores = anomaly_scores(
         x_test,
@@ -622,30 +502,12 @@ def evaluate_frozen(
     )
 
     y_binary = (y_test != 0).astype(np.int64)
-    predictions = (
-        scores >= threshold
-    ).astype(np.int64)
+    predictions = (scores >= threshold).astype(np.int64)
 
-    tp = int(
-        np.count_nonzero(
-            (y_binary == 1) & (predictions == 1)
-        )
-    )
-    fp = int(
-        np.count_nonzero(
-            (y_binary == 0) & (predictions == 1)
-        )
-    )
-    tn = int(
-        np.count_nonzero(
-            (y_binary == 0) & (predictions == 0)
-        )
-    )
-    fn = int(
-        np.count_nonzero(
-            (y_binary == 1) & (predictions == 0)
-        )
-    )
+    tp = int(np.count_nonzero((y_binary == 1) & (predictions == 1)))
+    fp = int(np.count_nonzero((y_binary == 0) & (predictions == 1)))
+    tn = int(np.count_nonzero((y_binary == 0) & (predictions == 0)))
+    fn = int(np.count_nonzero((y_binary == 1) & (predictions == 0)))
 
     result = {
         "method": artifact["method"],
@@ -657,18 +519,12 @@ def evaluate_frozen(
         "feature_count": len(features),
         "sequence_length": length_value,
         "stride": stride_value,
-        "test_endpoint_count": int(len(y_test)),
-        "test_simulation_count": int(
-            test_metadata["simulation_id"].nunique()
-        ),
+        "test_endpoint_count": len(y_test),
+        "test_simulation_count": int(test_metadata["simulation_id"].nunique()),
         "test_multiclass_counts": observed_counts,
         "test_binary_counts": {
-            "normal": int(
-                np.count_nonzero(y_binary == 0)
-            ),
-            "attack": int(
-                np.count_nonzero(y_binary == 1)
-            ),
+            "normal": int(np.count_nonzero(y_binary == 0)),
+            "attack": int(np.count_nonzero(y_binary == 1)),
         },
         "confusion_matrix": {
             "tn": tn,
@@ -693,22 +549,14 @@ def evaluate_frozen(
     )
 
     print("Frozen test evaluation completed.")
-    print(
-        "Aligned test endpoints: "
-        f"{len(y_test)}"
-    )
-    print(
-        "Test label counts: "
-        f"{observed_counts}"
-    )
-    print(
-        "Binary confusion matrix: "
-        f"TN={tn}, FP={fp}, FN={fn}, TP={tp}"
-    )
+    print(f"Aligned test endpoints: {len(y_test)}")
+    print(f"Test label counts: {observed_counts}")
+    print(f"Binary confusion matrix: TN={tn}, FP={fp}, FN={fn}, TP={tp}")
     print("Test metrics:")
     for name, value in metrics.items():
         print(f"  {name}: {value:.6f}")
     print(f"Artifact: {output_path}")
+
 
 def main() -> None:
     parser = argparse.ArgumentParser(description=__doc__)
@@ -729,10 +577,7 @@ def main() -> None:
     calibrate_parser.add_argument(
         "--output",
         type=Path,
-        default=Path(
-            "results/statistical_baseline/"
-            "calibration.json"
-        ),
+        default=Path("results/statistical_baseline/calibration.json"),
     )
     calibrate_parser.add_argument(
         "--length",
@@ -757,18 +602,12 @@ def main() -> None:
     evaluate_parser.add_argument(
         "--calibration",
         type=Path,
-        default=Path(
-            "results/statistical_baseline/"
-            "calibration_aligned_frozen.json"
-        ),
+        default=Path("results/statistical_baseline/calibration_aligned_frozen.json"),
     )
     evaluate_parser.add_argument(
         "--output",
         type=Path,
-        default=Path(
-            "results/statistical_baseline/"
-            "test_evaluation.json"
-        ),
+        default=Path("results/statistical_baseline/test_evaluation.json"),
     )
 
     args = parser.parse_args()
@@ -790,9 +629,7 @@ def main() -> None:
         )
         return
 
-    raise RuntimeError(
-        f"Unsupported command: {args.command}"
-    )
+    raise RuntimeError(f"Unsupported command: {args.command}")
 
 
 if __name__ == "__main__":

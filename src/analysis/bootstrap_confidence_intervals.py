@@ -52,29 +52,23 @@ EXPERIMENTS = (
     Experiment(
         task="general",
         model="gru",
-        prediction_root=Path(
-            "results/bootstrap_general_gru/predictions"
-        ),
+        prediction_root=Path("results/bootstrap_general_gru/predictions"),
     ),
     Experiment(
         task="early",
         model="cnn_lstm",
-        prediction_root=Path(
-            "results/bootstrap_early_cnn_lstm/predictions"
-        ),
+        prediction_root=Path("results/bootstrap_early_cnn_lstm/predictions"),
     ),
 )
 
 
 def load_scenario_strata(path: Path) -> dict[str, tuple[str, ...]]:
-    scenarios = pd.read_csv(path)
+    scenarios = pd.read_csv(str(path))
 
     required = {"simulation_id", "attack_type", "split"}
     missing = required - set(scenarios.columns)
     if missing:
-        raise ValueError(
-            f"Scenario manifest is missing columns: {sorted(missing)}"
-        )
+        raise ValueError(f"Scenario manifest is missing columns: {sorted(missing)}")
 
     test = scenarios.loc[scenarios["split"] == "test"].copy()
     if test["simulation_id"].duplicated().any():
@@ -86,9 +80,7 @@ def load_scenario_strata(path: Path) -> dict[str, tuple[str, ...]]:
         strata[str(attack_type)] = ids
 
     if len(strata) != 4:
-        raise ValueError(
-            f"Expected four scenario strata, found {len(strata)}."
-        )
+        raise ValueError(f"Expected four scenario strata, found {len(strata)}.")
 
     if any(len(ids) != 11 for ids in strata.values()):
         raise ValueError(
@@ -122,25 +114,19 @@ def load_predictions(experiment: Experiment) -> dict[int, pd.DataFrame]:
         if not path.exists():
             raise FileNotFoundError(path)
 
-        frame = pd.read_csv(path)
+        frame = pd.read_csv(str(path))
         missing = required - set(frame.columns)
         if missing:
-            raise ValueError(
-                f"{path} is missing columns: {sorted(missing)}"
-            )
+            raise ValueError(f"{path} is missing columns: {sorted(missing)}")
 
         frame["simulation_id"] = frame["simulation_id"].astype(str)
 
-        identity = frame[
-            ["simulation_id", "step", "y_true"]
-        ].reset_index(drop=True)
+        identity = frame[["simulation_id", "step", "y_true"]].reset_index(drop=True)
 
         if reference_identity is None:
             reference_identity = identity
         elif not identity.equals(reference_identity):
-            raise ValueError(
-                f"Evaluation endpoints differ across seeds: {path}"
-            )
+            raise ValueError(f"Evaluation endpoints differ across seeds: {path}")
 
         frames[seed] = frame
 
@@ -170,9 +156,7 @@ def macro_pr_auc(
     y_true: np.ndarray,
     probabilities: np.ndarray,
 ) -> float:
-    binary = np.column_stack(
-        [(y_true == label).astype(np.int64) for label in LABELS]
-    )
+    binary = np.column_stack([(y_true == label).astype(np.int64) for label in LABELS])
 
     scores = [
         float(
@@ -189,9 +173,9 @@ def macro_pr_auc(
 def compute_metrics(frame: pd.DataFrame) -> dict[str, float]:
     y_true = frame["y_true"].to_numpy(dtype=np.int64)
     y_pred = frame["y_pred"].to_numpy(dtype=np.int64)
-    probabilities = frame[
-        ["prob_0", "prob_1", "prob_2", "prob_3"]
-    ].to_numpy(dtype=float)
+    probabilities = frame[["prob_0", "prob_1", "prob_2", "prob_3"]].to_numpy(
+        dtype=float
+    )
 
     result = {
         "macro_f1": float(
@@ -204,9 +188,7 @@ def compute_metrics(frame: pd.DataFrame) -> dict[str, float]:
             )
         ),
         "mcc": float(matthews_corrcoef(y_true, y_pred)),
-        "balanced_accuracy": float(
-            balanced_accuracy_score(y_true, y_pred)
-        ),
+        "balanced_accuracy": float(balanced_accuracy_score(y_true, y_pred)),
         "macro_pr_auc": macro_pr_auc(y_true, probabilities),
     }
 
@@ -255,9 +237,7 @@ def simulation_groups(
             "simulation_id",
             sort=False,
         ):
-            seed_groups[str(simulation_id)] = group.reset_index(
-                drop=True
-            )
+            seed_groups[str(simulation_id)] = group.reset_index(drop=True)
 
         result[seed] = seed_groups
 
@@ -291,20 +271,12 @@ def materialize_bootstrap_frame(
 def original_multi_seed_metrics(
     frames: dict[int, pd.DataFrame],
 ) -> dict[str, float]:
-    per_seed_metrics = [
-        compute_metrics(frames[seed])
-        for seed in SEEDS
-    ]
+    per_seed_metrics = [compute_metrics(frames[seed]) for seed in SEEDS]
     metric_names = tuple(per_seed_metrics[0])
 
     return {
         metric: float(
-            np.mean(
-                [
-                    seed_metrics[metric]
-                    for seed_metrics in per_seed_metrics
-                ]
-            )
+            np.mean([seed_metrics[metric] for seed_metrics in per_seed_metrics])
         )
         for metric in metric_names
     }
@@ -325,8 +297,7 @@ def bootstrap_experiment(
 
     rng = np.random.default_rng(bootstrap_seed)
     bootstrap_values = {
-        metric: np.empty(replicates, dtype=float)
-        for metric in metric_names
+        metric: np.empty(replicates, dtype=float) for metric in metric_names
     }
 
     for replicate in range(replicates):
@@ -342,12 +313,7 @@ def bootstrap_experiment(
 
         for metric in metric_names:
             bootstrap_values[metric][replicate] = float(
-                np.mean(
-                    [
-                        values[metric]
-                        for values in seed_metrics
-                    ]
-                )
+                np.mean([values[metric] for values in seed_metrics])
             )
 
     rows = []
@@ -457,16 +423,13 @@ def main() -> None:
             for attack_type, simulation_ids in strata.items()
         },
         "total_test_simulations": sum(
-            len(simulation_ids)
-            for simulation_ids in strata.values()
+            len(simulation_ids) for simulation_ids in strata.values()
         ),
         "endpoint_resampling": False,
         "seed_aggregation": "metric_then_mean_across_training_seeds",
     }
 
-    (
-        args.output_root / "bootstrap_audit.json"
-    ).write_text(
+    (args.output_root / "bootstrap_audit.json").write_text(
         json.dumps(audit, indent=2, sort_keys=True),
         encoding="utf-8",
     )
@@ -477,14 +440,10 @@ def main() -> None:
         "ci_lower_95",
         "ci_upper_95",
     ):
-        display[column] = display[column].map(
-            lambda value: f"{value:.4f}"
-        )
+        display[column] = display[column].map(lambda value: f"{value:.4f}")
 
     print(display.to_string(index=False))
-    print(
-        f"\nResults written to: {args.output_root}"
-    )
+    print(f"\nResults written to: {args.output_root}")
 
 
 if __name__ == "__main__":

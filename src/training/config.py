@@ -1,9 +1,11 @@
+# ruff: noqa: TRY004
 """Validated training configuration loading."""
+
 from __future__ import annotations
 
+from collections.abc import Mapping
 from dataclasses import dataclass
 from pathlib import Path
-from collections.abc import Mapping
 from typing import Any
 
 import yaml
